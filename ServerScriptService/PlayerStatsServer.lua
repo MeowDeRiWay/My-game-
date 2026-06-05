@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PlayerStatsConfig = require(ReplicatedStorage:WaitForChild("PlayerStatsConfig"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -17,14 +18,14 @@ if not SprintStateRequest then
 	SprintStateRequest.Parent = Remotes
 end
 
-local MAX_HEALTH = 20
-local MAX_STAMINA = 100
+local PlayerStatsConfig.MaxHealth
+local PlayerStatsConfig.MaxStamina
 
-local NORMAL_SPEED = 5
-local SPRINT_SPEED = 15
+local PlayerStatsConfig.NormalSpeed
+local PlayerStatsConfig.SprintSpeed
 
-local STAMINA_DRAIN_PER_SECOND = 10
-local STAMINA_REGEN_PER_SECOND = 3
+local PlayerStatsConfig.StaminaDrainPerSecond
+local PlayerStatsConfig.StaminaRegenPerSecond
 
 local stats = {}
 
