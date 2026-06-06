@@ -48,7 +48,7 @@ function WorldInteraction.Create(params)
 			return
 		end
 
-		if baseObject and baseObject:GetAttribute("ObjectType") == "PrimitiveTable" then
+		if baseObject then
 			BaseObjectRequest:FireServer("Interact", baseObject)
 			return
 		end
