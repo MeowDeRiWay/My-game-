@@ -35,13 +35,14 @@ function ChestHandler.InitChest(chest)
 end
 
 function ChestHandler.Open(player, chest)
+	print("CHEST OPEN CALLED")
 	if not chest then return end
 	if chest:GetAttribute("ObjectType") ~= "PrimitiveChest" then return end
 
 	ChestHandler.InitChest(chest)
 
 	local storedItem, storedAmount = getChestData(chest)
-
+	print("SENDING CHEST UI")
 	ctx.ChestRequest:FireClient(player, "Open", {
 		Chest = chest,
 		StoredItem = storedItem,
