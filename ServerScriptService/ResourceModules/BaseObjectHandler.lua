@@ -75,6 +75,10 @@ local function placeObject(player, position, itemName)
 	object:SetAttribute("Protection", config.Protection or 0)
 	object:SetAttribute("Resistance", config.Resistance or 0)
 	object:SetAttribute("Absorption", config.Absorption or 0)
+	
+	if config.ObjectType == "PrimitiveChest" and ctx.ChestHandler then
+		ctx.ChestHandler.InitChest(object)
+	end
 
 	ctx.SendInventory(player)
 end
@@ -88,6 +92,13 @@ local function interactObject(player, object)
 			"OpenCrafting",
 			"PrimitiveTable"
 		)
+	end
+	
+	if object:GetAttribute("ObjectType") == "PrimitiveChest" then
+		if ctx.ChestHandler then
+			ctx.ChestHandler.Open(player, object)
+		end
+		return
 	end
 end
 
