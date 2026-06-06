@@ -18,14 +18,14 @@ if not SprintStateRequest then
 	SprintStateRequest.Parent = Remotes
 end
 
-local PlayerStatsConfig.MaxHealth
-local PlayerStatsConfig.MaxStamina
+local MAX_HEALTH = PlayerStatsConfig.MaxHealth
+local MAX_STAMINA = PlayerStatsConfig.MaxStamina
 
-local PlayerStatsConfig.NormalSpeed
-local PlayerStatsConfig.SprintSpeed
+local NORMAL_SPEED = PlayerStatsConfig.NormalSpeed
+local SPRINT_SPEED = PlayerStatsConfig.SprintSpeed
 
-local PlayerStatsConfig.StaminaDrainPerSecond
-local PlayerStatsConfig.StaminaRegenPerSecond
+local STAMINA_DRAIN_PER_SECOND = PlayerStatsConfig.StaminaDrainPerSecond
+local STAMINA_REGEN_PER_SECOND = PlayerStatsConfig.StaminaRegenPerSecond
 
 local stats = {}
 
