@@ -2,7 +2,9 @@ local ChestHandler = {}
 
 local ctx = {}
 
-local CHEST_CAPACITY = 50
+local function getCapacity(chest)
+	return chest:GetAttribute("StorageCapacity") or 50
+end
 
 function ChestHandler.Init(context)
 	ctx = context
@@ -22,12 +24,12 @@ end
 local function setChestData(chest, itemName, amount)
 	chest:SetAttribute("StoredItem", itemName or "")
 	chest:SetAttribute("StoredAmount", amount or 0)
-	chest:SetAttribute("Capacity", CHEST_CAPACITY)
+	chest:SetAttribute("Capacity", getCapacity(chest))
 end
 
 function ChestHandler.InitChest(chest)
 	if not chest then return end
-	if chest:GetAttribute("ObjectType") ~= "PrimitiveChest" then return end
+	if chest:GetAttribute("ObjectType") ~= "storage" then return end
 
 	if chest:GetAttribute("StoredAmount") == nil then
 		setChestData(chest, nil, 0)
@@ -37,7 +39,7 @@ end
 function ChestHandler.Open(player, chest)
 	print("CHEST OPEN CALLED")
 	if not chest then return end
-	if chest:GetAttribute("ObjectType") ~= "PrimitiveChest" then return end
+	if chest:GetAttribute("ObjectType") ~= "storage" then return end
 
 	ChestHandler.InitChest(chest)
 
@@ -47,14 +49,14 @@ function ChestHandler.Open(player, chest)
 		Chest = chest,
 		StoredItem = storedItem,
 		StoredAmount = storedAmount,
-		Capacity = CHEST_CAPACITY,
+		Capacity = getCapacity(chest),
 		Inventory = ctx.GetInventory(player),
 	})
 end
 
 function ChestHandler.Deposit(player, chest, itemName, amount)
 	if not chest then return end
-	if chest:GetAttribute("ObjectType") ~= "PrimitiveChest" then return end
+	if chest:GetAttribute("ObjectType") ~= "storage" then return end
 
 	ChestHandler.InitChest(chest)
 
@@ -75,7 +77,7 @@ function ChestHandler.Deposit(player, chest, itemName, amount)
 		return
 	end
 
-	local freeSpace = CHEST_CAPACITY - storedAmount
+	local freeSpace = getCapacity(chest) - storedAmount
 	if freeSpace <= 0 then
 		ctx.ChestRequest:FireClient(player, "Error", "Сундук заповнений")
 		return
@@ -101,7 +103,7 @@ end
 
 function ChestHandler.Withdraw(player, chest, amount)
 	if not chest then return end
-	if chest:GetAttribute("ObjectType") ~= "PrimitiveChest" then return end
+	if chest:GetAttribute("ObjectType") ~= "storage" then return end
 
 	ChestHandler.InitChest(chest)
 
