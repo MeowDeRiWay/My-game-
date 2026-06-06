@@ -95,10 +95,7 @@ local function interactObject(player, object)
 	end
 	
 	if object:GetAttribute("ObjectType") == "PrimitiveChest" then
-		if ctx.ChestHandler then
-			ctx.ChestHandler.Open(player, object)
-		end
-		return
+		ctx.BaseObjectRequest:FireClient(player, "OpenStorage", "PrimitiveChest")
 	end
 end
 
