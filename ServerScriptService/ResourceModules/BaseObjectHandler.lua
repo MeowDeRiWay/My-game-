@@ -66,6 +66,11 @@ local function placeObject(player, position, itemName)
 	end
 
 	object:SetAttribute("ObjectType", config.ObjectType)
+	object:SetAttribute("ObjectId", config.ObjectId or itemName)
+
+	if config.StorageCapacity then
+		object:SetAttribute("StorageCapacity", config.StorageCapacity)
+	end
 	object:SetAttribute("BaseType", config.BaseType)
 	object:SetAttribute("MaterialType", config.MaterialType)
 
@@ -76,7 +81,7 @@ local function placeObject(player, position, itemName)
 	object:SetAttribute("Resistance", config.Resistance or 0)
 	object:SetAttribute("Absorption", config.Absorption or 0)
 	
-	if config.ObjectType == "PrimitiveChest" and ctx.ChestHandler then
+	if config.ObjectType == "storage" and ctx.ChestHandler then
 		ctx.ChestHandler.InitChest(object)
 	end
 
@@ -86,15 +91,15 @@ end
 local function interactObject(player, object)
 	if not object then return end
 
-	if object:GetAttribute("ObjectType") == "PrimitiveTable" then
-		ctx.BaseObjectRequest:FireClient(
-			player,
-			"OpenCrafting",
-			"PrimitiveTable"
-		)
+	local objectType = object:GetAttribute("ObjectType")
+	local objectId = object:GetAttribute("ObjectId")
+
+	if objectType == "workbench" then
+		ctx.BaseObjectRequest:FireClient(player, "OpenCrafting", objectId)
+		return
 	end
-	
-	if object:GetAttribute("ObjectType") == "PrimitiveChest" then
+
+	if objectType == "storage" then
 		if ctx.ChestHandler then
 			ctx.ChestHandler.Open(player, object)
 		end
