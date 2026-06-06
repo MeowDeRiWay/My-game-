@@ -45,7 +45,8 @@ local ItemConfig = {
 		Type = "BasePlaceable",
 		Stackable = true,
 
-		ObjectType = "PrimitiveTable",
+		ObjectType = "workbench",
+		ObjectId = "PrimitiveTable",
 		BaseType = "base",
 		MaterialType = "wood",
 
@@ -74,14 +75,20 @@ local ItemConfig = {
 		Type = "BasePlaceable",
 		Stackable = true,
 
-		ObjectType = "PrimitiveChest",
+		ObjectType = "storage",
+		ObjectId = "PrimitiveChest",
+		
 		BaseType = "base",
 		MaterialType = "wood",
 
 		ModelFolder = "Era_1",
 		ModelName = "PrimitiveChestModel",
-
+		
+		Protection = 1,
+		Resistance = 0,
+		Absorption = 0,
 		MaxHealth = 50,
+		StorageCapacity = 50,
 		Icon = "",
 	},
 }
