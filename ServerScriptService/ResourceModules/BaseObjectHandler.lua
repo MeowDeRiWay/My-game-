@@ -71,6 +71,7 @@ local function placeObject(player, position, itemName)
 	if config.StorageCapacity then
 		object:SetAttribute("StorageCapacity", config.StorageCapacity)
 	end
+	
 	object:SetAttribute("BaseType", config.BaseType)
 	object:SetAttribute("MaterialType", config.MaterialType)
 
