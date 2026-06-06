@@ -34,9 +34,9 @@ local function sendStats(player)
 	if not data then return end
 
 	PlayerStatsUpdate:FireClient(player, {
-		Health = data.Health,
+		Health = math.floor(data.Health + 0.5),
 		MaxHealth = data.MaxHealth,
-		Stamina = data.Stamina,
+		Stamina = math.floor(data.Stamina + 0.5),
 		MaxStamina = data.MaxStamina,
 		IsSprinting = data.IsSprinting,
 	})
@@ -141,7 +141,6 @@ task.spawn(function()
 			end
 
 			if changed then
-				data.Stamina = math.floor(data.Stamina + 0.5)
 				sendStats(player)
 			end
 		end
