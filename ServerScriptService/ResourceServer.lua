@@ -6,7 +6,7 @@ local HitResource = Remotes:WaitForChild("HitResource")
 local InventoryUpdate = Remotes:WaitForChild("InventoryUpdate")
 local ResourcePopupEvent = Remotes:WaitForChild("ResourcePopupEvent")
 local DamagePopupEvent = Remotes:WaitForChild("DamagePopupEvent")
-local ChestHandler = require(script.Parent.ResourceModules.ChestHandler)
+
 
 local CraftRequest = ReplicatedStorage:WaitForChild("CraftRequest")
 local CraftingConfig = require(ReplicatedStorage:WaitForChild("CraftingConfig"))
@@ -17,8 +17,9 @@ local BaseObjectsStorage = ReplicatedStorage:WaitForChild("Base.Obj")
 local Era1BaseObjects = BaseObjectsStorage:WaitForChild("Era_1")
 
 local ResourceHitHandler = require(script.Parent.ResourceModules.ResourceHitHandler)
-local BaseObjectHandler =
-	require(script.Parent.ResourceModules.BaseObjectHandler)
+local BaseObjectHandler = require(script.Parent.ResourceModules.BaseObjectHandler)
+local ChestHandler = require(script.Parent.ResourceModules.ChestHandler)
+
 
 local inventories = {}
 
@@ -116,6 +117,8 @@ Players.PlayerAdded:Connect(function(player)
 	inventories[player] = {
 		["Рука"] = 1,
 		["Примітивний стіл"] = 1,
+		["Примітивний інструмент"] = 1,
+		["Примітивний сундук"] = 1,
 		["Оброблена дошка"] = 20,
 	}
 
