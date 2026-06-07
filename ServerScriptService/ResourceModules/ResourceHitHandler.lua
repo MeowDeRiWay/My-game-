@@ -42,7 +42,7 @@ function ResourceHitHandler.Handle(player, resource, itemName)
 	if not player then return end
 	if not resource then return end
 	if not resource:IsA("BasePart") then return end
-	if resource:GetAttribute("ResourceType") ~= "Tree" then return end
+	if not resource:GetAttribute("ResourceType") then return end
 	if resource:GetAttribute("Disabled") == true then return end
 
 	local health = resource:GetAttribute("Health")

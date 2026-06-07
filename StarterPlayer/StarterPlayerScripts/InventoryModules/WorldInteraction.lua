@@ -6,6 +6,8 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local HitResource = Remotes:WaitForChild("HitResource")
 local BaseObjectRequest = Remotes:WaitForChild("BaseObjectRequest")
 
+local ShootRequest = Remotes:WaitForChild("ShootRequest")
+
 local WorldInteraction = {}
 
 local function getBaseObjectFromTarget(target)
@@ -30,13 +32,20 @@ function WorldInteraction.Create(params)
 
 	local controller = {}
 
-	function controller.HandleClick(activeItem, combatMode)
+	function controller.HandleClick(activeItem, activeAmmo, combatMode)
 		local target = mouse.Target
 		local baseObject = getBaseObjectFromTarget(target)
 
 		if combatMode == true then
-			if target and target:GetAttribute("ResourceType") == "Tree" then
+			if target and target:GetAttribute("ResourceType") then
 				HitResource:FireServer(target, activeItem)
+				return
+			end
+			
+			local activeConfig = activeItem and ItemConfig[activeItem]
+
+			if activeConfig and activeConfig.Type == "RangeWeapon" then
+				ShootRequest:FireServer(activeItem, activeAmmo, mouse.Hit.Position)
 				return
 			end
 

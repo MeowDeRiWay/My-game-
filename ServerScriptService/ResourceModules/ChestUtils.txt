@@ -1,0 +1,37 @@
+local ChestUtils = {}
+
+function ChestUtils.GetCapacity(chest)
+	return chest:GetAttribute("StorageCapacity") or 50
+end
+
+function ChestUtils.GetChestData(chest)
+	local itemName = chest:GetAttribute("StoredItem")
+	local amount = chest:GetAttribute("StoredAmount") or 0
+
+	if itemName == "" then
+		itemName = nil
+	end
+
+	return itemName, amount
+end
+
+function ChestUtils.SetChestData(chest, itemName, amount)
+	chest:SetAttribute("StoredItem", itemName or "")
+	chest:SetAttribute("StoredAmount", amount or 0)
+	chest:SetAttribute("Capacity", ChestUtils.GetCapacity(chest))
+end
+
+function ChestUtils.IsStorageChest(chest)
+	if not chest then return false end
+	return chest:GetAttribute("ObjectType") == "storage"
+end
+
+function ChestUtils.InitChest(chest)
+	if not ChestUtils.IsStorageChest(chest) then return end
+
+	if chest:GetAttribute("StoredAmount") == nil then
+		ChestUtils.SetChestData(chest, nil, 0)
+	end
+end
+
+return ChestUtils

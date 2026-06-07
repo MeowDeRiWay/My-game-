@@ -1,0 +1,33 @@
+local Config = require(script.Parent:WaitForChild("Config"))
+local CharacterState = require(script.Parent:WaitForChild("CharacterState"))
+local PoseLibrary = require(script.Parent:WaitForChild("PoseLibrary"))
+
+local ArmAnimator = {}
+
+function ArmAnimator.Update(dt, player, data)
+	if not data.LeftMotor or not data.RightMotor then
+		return
+	end
+
+	data.IdleTime += dt
+
+	local mode = CharacterState.ReadMode(player)
+	local itemClass = player:GetAttribute("ActiveItemClass")
+
+	local sway = math.sin(data.IdleTime * 3) * 0.04
+	local pose = PoseLibrary.GetPose(mode, itemClass, sway)
+
+	local alpha = math.clamp(dt * Config.ARM_LERP_SPEED, 0, 1)
+
+	data.LeftMotor.C0 = data.LeftMotor.C0:Lerp(
+		Config.LEFT_OFFSET * pose.Left,
+		alpha
+	)
+
+	data.RightMotor.C0 = data.RightMotor.C0:Lerp(
+		Config.RIGHT_OFFSET * pose.Right,
+		alpha
+	)
+end
+
+return ArmAnimator

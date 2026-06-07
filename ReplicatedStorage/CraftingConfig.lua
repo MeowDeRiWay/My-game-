@@ -20,6 +20,23 @@ CraftingConfig.Eras = {
 
 				Unique = true,
 			},
+			
+			{
+				Id = "RoughtSpear",
+				Name = "Заточена палка",
+
+				Requirements = {
+					["Ломака"] = 2,
+				},
+
+				Result = {
+					Item = "Заточена палка",
+					Amount = 1,
+				},
+
+				Unique = true,
+			},
+			
 			{
 				Id = "RoughtWoodenPlank",
 				Name = "Груба дошка",
@@ -82,6 +99,7 @@ CraftingConfig.Eras = {
 
 				Unique = false,
 			},
+			
 			{
 				Id = "PrimitiveChest",
 				Name = "Примітивний сундук",
@@ -91,7 +109,7 @@ CraftingConfig.Eras = {
 				},
 
 				Requirements = {
-					["Оброблена дошка"] = 10,
+					["Оброблена дошка"] = 6,
 				},
 
 				Tools = {
@@ -100,6 +118,56 @@ CraftingConfig.Eras = {
 
 				Result = {
 					Item = "Примітивний сундук",
+					Amount = 1,
+				},
+
+				Unique = false,
+			},
+			
+			{
+				Id = "SharpStone",
+				Name = "Точильний камінь",
+
+				StationsAny = {
+					"PrimitiveTable",
+				},
+
+				Requirements = {
+					["Камінь"] = 1,
+				},
+
+				Tools = {
+					["Грубий дерев'яний інструмент"] = 1,
+				},
+
+				Result = {
+					Item = "Точильний камінь",
+					Amount = 1,
+				},
+
+				Unique = false,
+			},
+			
+			{
+				Id = "MasterTable",
+				Name = "Стіл майстра",
+
+				StationsAny = {
+					"PrimitiveTable",
+				},
+
+				Requirements = {
+					["Оброблена дошка"] = 7,
+					["Грубий дерев'яний інструмент"] = 1,
+					["Точильний камінь"] = 1,
+				},
+
+				Tools = {
+					["Грубий дерев'яний інструмент"] = 1,
+				},
+
+				Result = {
+					Item = "Стіл майстра",
 					Amount = 1,
 				},
 

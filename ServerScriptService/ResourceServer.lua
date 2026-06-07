@@ -7,6 +7,8 @@ local InventoryUpdate = Remotes:WaitForChild("InventoryUpdate")
 local ResourcePopupEvent = Remotes:WaitForChild("ResourcePopupEvent")
 local DamagePopupEvent = Remotes:WaitForChild("DamagePopupEvent")
 
+local ProjectileHandler = require(script.Parent.ResourceModules.ProjectileHandler)
+local ShootRequest = Remotes:WaitForChild("ShootRequest")
 
 local CraftRequest = ReplicatedStorage:WaitForChild("CraftRequest")
 local CraftingConfig = require(ReplicatedStorage:WaitForChild("CraftingConfig"))
@@ -20,6 +22,7 @@ local ResourceHitHandler = require(script.Parent.ResourceModules.ResourceHitHand
 local BaseObjectHandler = require(script.Parent.ResourceModules.BaseObjectHandler)
 local ChestHandler = require(script.Parent.ResourceModules.ChestHandler)
 
+local StarterPack = require(script:WaitForChild("StarterPack"))
 
 local inventories = {}
 
@@ -113,16 +116,30 @@ ResourceHitHandler.Init({
 	SpawnTime = RESPAWN_TIME,
 })
 
-Players.PlayerAdded:Connect(function(player)
-	inventories[player] = {
-		["Рука"] = 1,
-		["Примітивний стіл"] = 1,
-		["Примітивний інструмент"] = 1,
-		["Примітивний сундук"] = 1,
-		["Оброблена дошка"] = 20,
-	}
+ProjectileHandler.Init({
+	ItemConfig = ItemConfig,
+	GetInventory = function(player)
+		return inventories[player]
+	end,
+	RemoveItem = removeItem,
+	SendInventory = sendInventory,
+	DamageResolver = DamageResolver,
+	DamagePopup = DamagePopupEvent,
+})
 
-	sendInventory(player)
+Players.PlayerAdded:Connect(function(player)
+	inventories[player] = StarterPack.Get()
+
+	local function forceInventoryUpdate()
+		task.wait(0.2)
+		sendInventory(player)
+	end
+
+	player.CharacterAdded:Connect(function()
+		forceInventoryUpdate()
+	end)
+
+	forceInventoryUpdate()
 end)
 
 BaseObjectHandler.Init({
@@ -224,4 +241,8 @@ end)
 
 ChestRequest.OnServerEvent:Connect(function(player, action, data)
 	ChestHandler.Handle(player, action, data)
+end)
+
+ShootRequest.OnServerEvent:Connect(function(player, weaponName, ammoName, targetPosition)
+	ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 end)

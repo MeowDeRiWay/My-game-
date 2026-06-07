@@ -1,0 +1,74 @@
+local ChestDeposit = {}
+
+local ChestUtils = require(script.Parent:WaitForChild("ChestUtils"))
+local ChestOpen = require(script.Parent:WaitForChild("ChestOpen"))
+
+local ctx = {}
+
+function ChestDeposit.Init(context)
+	ctx = context
+end
+
+function ChestDeposit.Run(player, chest, itemName, amount)
+	if not ChestUtils.IsStorageChest(chest) then return end
+
+	ChestUtils.InitChest(chest)
+
+	amount = tonumber(amount) or 0
+	amount = math.floor(amount)
+
+	if amount <= 0 then
+		warn("CHEST: bad amount", amount)
+		return
+	end
+
+	if not itemName then
+		warn("CHEST: no itemName")
+		return
+	end
+
+	local itemConfig = ctx.ItemConfig[itemName]
+
+	if not itemConfig then
+		warn("CHEST: item not found in ItemConfig:", itemName)
+		return
+	end
+
+	if itemConfig.Type ~= "Resource" then
+		warn("CHEST: item is not Resource:", itemName, itemConfig.Type)
+		return
+	end
+
+	local storedItem, storedAmount = ChestUtils.GetChestData(chest)
+
+	if storedItem and storedItem ~= itemName then
+		ctx.ChestRequest:FireClient(player, "Error", "У сундуку вже лежить інший ресурс")
+		return
+	end
+
+	local freeSpace = ChestUtils.GetCapacity(chest) - storedAmount
+
+	if freeSpace <= 0 then
+		ctx.ChestRequest:FireClient(player, "Error", "Сундук заповнений")
+		return
+	end
+
+	local depositAmount = math.min(amount, freeSpace)
+
+	if not ctx.HasItem(player, itemName, depositAmount) then
+		ctx.ChestRequest:FireClient(player, "Error", "Немає стільки ресурсу")
+		return
+	end
+
+	ctx.RemoveItem(player, itemName, depositAmount)
+
+	storedItem = itemName
+	storedAmount += depositAmount
+
+	ChestUtils.SetChestData(chest, storedItem, storedAmount)
+
+	ctx.SendInventory(player)
+	ChestOpen.Run(player, chest)
+end
+
+return ChestDeposit

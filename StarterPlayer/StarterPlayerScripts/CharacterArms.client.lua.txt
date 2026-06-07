@@ -1,0 +1,65 @@
+print("[CharacterArms] script started")
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local modulesFolder = script:WaitForChild("CharacterArms")
+
+local ArmBuilder = require(modulesFolder:WaitForChild("ArmBuilder"))
+local ItemHolder = require(modulesFolder:WaitForChild("ItemHolder"))
+local ArmAnimator = require(modulesFolder:WaitForChild("ArmAnimator"))
+
+local characterData = nil
+
+local function clear()
+	ItemHolder.Clear()
+
+	characterData = nil
+end
+
+local function setupCharacter(character)
+	clear()
+
+	task.wait(0.2)
+
+	characterData = ArmBuilder.Build(character)
+
+	if not characterData then
+		warn("[CharacterArms] Failed to build arms")
+		return
+	end
+
+	ItemHolder.Update(player, characterData)
+end
+
+player.CharacterAdded:Connect(setupCharacter)
+
+player.CharacterRemoving:Connect(function()
+	clear()
+end)
+
+player:GetAttributeChangedSignal("ActiveItemClass"):Connect(function()
+	if characterData then
+		ItemHolder.Update(player, characterData)
+	end
+end)
+
+player:GetAttributeChangedSignal("ActiveItemModel"):Connect(function()
+	if characterData then
+		ItemHolder.Update(player, characterData)
+	end
+end)
+
+if player.Character then
+	setupCharacter(player.Character)
+end
+
+RunService.RenderStepped:Connect(function(dt)
+	if not characterData then
+		return
+	end
+
+	ArmAnimator.Update(dt, player, characterData)
+	ItemHolder.Update(player, characterData)
+end)

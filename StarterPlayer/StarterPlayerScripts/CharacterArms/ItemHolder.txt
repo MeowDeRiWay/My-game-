@@ -1,0 +1,132 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ItemHolder = {}
+
+local ITEM_MODELS = ReplicatedStorage
+	:WaitForChild("Base.Obj")
+	:WaitForChild("ItemModels")
+
+local TOOLS_MODELS = ITEM_MODELS:WaitForChild("Tools")
+
+local MODEL_FOLDERS = {
+	OneHandedClose = TOOLS_MODELS:WaitForChild("OneHandedClose"),
+	TwoHandedClose = TOOLS_MODELS:WaitForChild("TwoHandedClose"),
+}
+
+local heldModel = nil
+local heldModelKey = nil
+
+local function getModelPrimaryPart(model)
+	if model.PrimaryPart then
+		return model.PrimaryPart
+	end
+
+	for _, obj in ipairs(model:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			model.PrimaryPart = obj
+			return obj
+		end
+	end
+
+	return nil
+end
+
+local function weldModelToHand(model, handPart)
+	for _, obj in ipairs(model:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			obj.Anchored = false
+			obj.CanCollide = false
+			obj.CanTouch = false
+			obj.CanQuery = false
+			obj.Massless = true
+
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = handPart
+			weld.Part1 = obj
+			weld.Parent = obj
+		end
+	end
+end
+
+function ItemHolder.Clear()
+	if heldModel then
+		heldModel:Destroy()
+		heldModel = nil
+	end
+
+	heldModelKey = nil
+end
+
+local function getGripCFrame(itemClass, handPart)
+	if itemClass == "TwoHandedClose" then
+		return handPart.CFrame
+			* CFrame.new(0, 1, 0)
+			* CFrame.Angles(0, 0, math.rad(90))
+	end
+
+	return handPart.CFrame
+		* CFrame.new(0, 0.5, 0)
+		* CFrame.Angles(0, 0, 0)
+end
+
+local function equip(player, data, itemClass, modelName)
+	if not data.Character or not data.RightArm then
+		return
+	end
+
+	local folder = MODEL_FOLDERS[itemClass]
+
+	if not folder then
+		warn("[ItemHolder] Unsupported item class:", itemClass)
+		ItemHolder.Clear()
+		return
+	end
+
+	local sourceModel = folder:FindFirstChild(modelName)
+
+	if not sourceModel then
+		warn("[ItemHolder] Model not found:", itemClass, modelName)
+		ItemHolder.Clear()
+		return
+	end
+
+	ItemHolder.Clear()
+
+	local model = sourceModel:Clone()
+	model.Name = "Held_" .. modelName
+	model.Parent = data.Character
+
+	local primary = getModelPrimaryPart(model)
+
+	if not primary then
+		warn("[ItemHolder] Held model has no BasePart:", modelName)
+		model:Destroy()
+		return
+	end
+
+	model:PivotTo(getGripCFrame(itemClass, data.RightArm))
+	weldModelToHand(model, data.RightArm)
+
+	heldModel = model
+	heldModelKey = itemClass .. ":" .. modelName
+end
+
+function ItemHolder.Update(player, data)
+	local itemClass = player:GetAttribute("ActiveItemClass")
+	local modelName = player:GetAttribute("ActiveItemModel")
+
+	if not itemClass or not modelName or modelName == "" then
+		ItemHolder.Clear()
+		return
+	end
+
+	local newKey = itemClass .. ":" .. modelName
+
+	if heldModel and heldModelKey == newKey then
+		return
+	end
+
+	equip(player, data, itemClass, modelName)
+end
+
+return ItemHolder

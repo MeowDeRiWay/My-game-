@@ -1,0 +1,242 @@
+local ChestUI = {}
+ChestUI.__index = ChestUI
+
+function ChestUI.new(player, callbacks)
+	local self = setmetatable({}, ChestUI)
+
+	self.player = player
+	self.callbacks = callbacks or {}
+
+	self.currentInventory = {}
+	self.chestItem = nil
+	self.chestAmount = 0
+	self.chestCapacity = 50
+
+	self.selectedSide = nil
+	self.selectedItem = nil
+
+	self.gui = Instance.new("ScreenGui")
+	self.gui.Name = "ChestGui"
+	self.gui.ResetOnSpawn = false
+	self.gui.Enabled = false
+	self.gui.Parent = player:WaitForChild("PlayerGui")
+
+	self.frame = Instance.new("Frame")
+	self.frame.Size = UDim2.new(0, 620, 0, 360)
+	self.frame.Position = UDim2.new(0.5, -310, 0.5, -180)
+	self.frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	self.frame.BorderSizePixel = 0
+	self.frame.Parent = self.gui
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -50, 0, 35)
+	title.Position = UDim2.new(0, 10, 0, 5)
+	title.BackgroundTransparency = 1
+	title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	title.Font = Enum.Font.SourceSansBold
+	title.TextSize = 22
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Text = "Скриня"
+	title.Parent = self.frame
+
+	local closeButton = Instance.new("TextButton")
+	closeButton.Size = UDim2.new(0, 30, 0, 30)
+	closeButton.Position = UDim2.new(1, -40, 0, 5)
+	closeButton.Text = "X"
+	closeButton.Parent = self.frame
+
+	local inventoryTitle = Instance.new("TextLabel")
+	inventoryTitle.Size = UDim2.new(0, 250, 0, 30)
+	inventoryTitle.Position = UDim2.new(0, 20, 0, 50)
+	inventoryTitle.BackgroundTransparency = 1
+	inventoryTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	inventoryTitle.Font = Enum.Font.SourceSansBold
+	inventoryTitle.TextSize = 20
+	inventoryTitle.Text = "Інвентар"
+	inventoryTitle.Parent = self.frame
+
+	self.chestTitle = Instance.new("TextLabel")
+	self.chestTitle.Size = UDim2.new(0, 250, 0, 30)
+	self.chestTitle.Position = UDim2.new(0, 350, 0, 50)
+	self.chestTitle.BackgroundTransparency = 1
+	self.chestTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	self.chestTitle.Font = Enum.Font.SourceSansBold
+	self.chestTitle.TextSize = 20
+	self.chestTitle.Text = "Скриня 0 / 50"
+	self.chestTitle.Parent = self.frame
+
+	self.inventoryList = self:_makeList(20)
+	self.chestList = self:_makeList(350)
+
+	local buttonsFrame = Instance.new("Frame")
+	buttonsFrame.Size = UDim2.new(0, 60, 0, 160)
+	buttonsFrame.Position = UDim2.new(0, 280, 0, 115)
+	buttonsFrame.BackgroundTransparency = 1
+	buttonsFrame.Parent = self.frame
+
+	local function makeMoveButton(text, y)
+		local button = Instance.new("TextButton")
+		button.Size = UDim2.new(0, 50, 0, 32)
+		button.Position = UDim2.new(0, 5, 0, y)
+		button.Text = text
+		button.TextSize = 20
+		button.Font = Enum.Font.SourceSansBold
+		button.Parent = buttonsFrame
+		return button
+	end
+
+	makeMoveButton(">", 0).MouseButton1Click:Connect(function()
+		self:_deposit(1)
+	end)
+
+	makeMoveButton(">>", 40).MouseButton1Click:Connect(function()
+		if not self.selectedItem then return end
+		local amount = self.currentInventory[self.selectedItem] or 0
+		self:_deposit(amount)
+	end)
+
+	makeMoveButton("<", 90).MouseButton1Click:Connect(function()
+		self:_withdraw(1)
+	end)
+
+	makeMoveButton("<<", 130).MouseButton1Click:Connect(function()
+		self:_withdraw(self.chestAmount)
+	end)
+
+	closeButton.MouseButton1Click:Connect(function()
+		self:Close()
+
+		if self.callbacks.OnClose then
+			self.callbacks.OnClose()
+		end
+	end)
+
+	return self
+end
+
+function ChestUI:_makeList(x)
+	local list = Instance.new("ScrollingFrame")
+	list.Size = UDim2.new(0, 250, 0, 220)
+	list.Position = UDim2.new(0, x, 0, 85)
+	list.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	list.BorderSizePixel = 0
+	list.CanvasSize = UDim2.new(0, 0, 0, 0)
+	list.ScrollBarThickness = 6
+	list.Parent = self.frame
+
+	return list
+end
+
+function ChestUI:_clearList(list)
+	for _, child in ipairs(list:GetChildren()) do
+		if child:IsA("TextButton") or child:IsA("TextLabel") then
+			child:Destroy()
+		end
+	end
+end
+
+function ChestUI:_makeItemButton(parent, text, y, side, itemName)
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(1, -10, 0, 28)
+	button.Position = UDim2.new(0, 5, 0, y)
+	button.Text = text
+	button.TextSize = 16
+	button.Font = Enum.Font.SourceSans
+	button.TextXAlignment = Enum.TextXAlignment.Left
+	button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	button.Parent = parent
+
+	if self.selectedSide == side and self.selectedItem == itemName then
+		button.BackgroundColor3 = Color3.fromRGB(80, 120, 80)
+	end
+
+	button.MouseButton1Click:Connect(function()
+		self.selectedSide = side
+		self.selectedItem = itemName
+		self:Refresh()
+	end)
+end
+
+function ChestUI:SetData(data)
+	self.currentInventory = data.Inventory or {}
+	self.chestItem = data.StoredItem
+	self.chestAmount = data.StoredAmount or 0
+	self.chestCapacity = data.Capacity or 50
+
+	if self.selectedItem then
+		local stillExistsInInventory = (self.currentInventory[self.selectedItem] or 0) > 0
+		local stillExistsInChest = self.chestItem == self.selectedItem and self.chestAmount > 0
+
+		if not stillExistsInInventory and not stillExistsInChest then
+			self.selectedSide = nil
+			self.selectedItem = nil
+		end
+	end
+
+	self:Refresh()
+end
+
+function ChestUI:Refresh()
+	self:_clearList(self.inventoryList)
+	self:_clearList(self.chestList)
+
+	local y = 5
+
+	for itemName, amount in pairs(self.currentInventory or {}) do
+		if amount > 0 then
+			self:_makeItemButton(self.inventoryList, itemName .. " x" .. amount, y, "inventory", itemName)
+			y += 32
+		end
+	end
+
+	self.inventoryList.CanvasSize = UDim2.new(0, 0, 0, y)
+
+	self.chestTitle.Text = "Скриня " .. self.chestAmount .. " / " .. self.chestCapacity
+
+	if self.chestItem and self.chestAmount > 0 then
+		self:_makeItemButton(self.chestList, self.chestItem .. " x" .. self.chestAmount, 5, "chest", self.chestItem)
+		self.chestList.CanvasSize = UDim2.new(0, 0, 0, 40)
+	else
+		local empty = Instance.new("TextLabel")
+		empty.Size = UDim2.new(1, -10, 0, 28)
+		empty.Position = UDim2.new(0, 5, 0, 5)
+		empty.BackgroundTransparency = 1
+		empty.TextColor3 = Color3.fromRGB(180, 180, 180)
+		empty.Text = "Порожньо"
+		empty.TextXAlignment = Enum.TextXAlignment.Left
+		empty.Parent = self.chestList
+	end
+end
+
+function ChestUI:_deposit(amount)
+	if self.selectedSide ~= "inventory" then return end
+	if not self.selectedItem then return end
+	if amount <= 0 then return end
+
+	if self.callbacks.OnDeposit then
+		self.callbacks.OnDeposit(self.selectedItem, amount)
+	end
+end
+
+function ChestUI:_withdraw(amount)
+	if self.selectedSide ~= "chest" then return end
+	if amount <= 0 then return end
+
+	if self.callbacks.OnWithdraw then
+		self.callbacks.OnWithdraw(amount)
+	end
+end
+
+function ChestUI:Open()
+	self.gui.Enabled = true
+	self:Refresh()
+end
+
+function ChestUI:Close()
+	self.gui.Enabled = false
+	self.selectedSide = nil
+	self.selectedItem = nil
+end
+
+return ChestUI

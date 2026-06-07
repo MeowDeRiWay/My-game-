@@ -1,0 +1,28 @@
+local BaseObjectInteract = {}
+
+local ctx = {}
+
+function BaseObjectInteract.Init(context)
+	ctx = context
+end
+
+function BaseObjectInteract.Run(player, object)
+	if not object then return end
+
+	local objectType = object:GetAttribute("ObjectType")
+	local objectId = object:GetAttribute("ObjectId")
+
+	if objectType == "workbench" then
+		ctx.BaseObjectRequest:FireClient(player, "OpenCrafting", objectId)
+		return
+	end
+
+	if objectType == "storage" then
+		if ctx.ChestHandler then
+			ctx.ChestHandler.Open(player, object)
+		end
+		return
+	end
+end
+
+return BaseObjectInteract

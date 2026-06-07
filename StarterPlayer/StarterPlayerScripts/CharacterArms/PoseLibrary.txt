@@ -1,0 +1,49 @@
+local PoseLibrary = {}
+
+PoseLibrary.Peace = function(sway)
+	return {
+		Left = CFrame.new(0, sway, 0)
+			* CFrame.Angles(math.rad(8), 0, math.rad(-8)),
+
+		Right = CFrame.new(0, -sway, 0)
+			* CFrame.Angles(math.rad(8), 0, math.rad(8)),
+	}
+end
+
+PoseLibrary.Combat = {}
+
+PoseLibrary.Combat.OneHandedClose = {
+	Left = CFrame.new(0.1, 0.1, -0.2)
+		* CFrame.Angles(math.rad(-10), 0, math.rad(-15)),
+
+	Right = CFrame.new(-0.35, 1.15, -0.2)
+		* CFrame.Angles(math.rad(35), 0, math.rad(45)),
+}
+
+PoseLibrary.Combat.TwoHandedClose = {
+	Left = CFrame.new(1, -0.2, -1.5)
+		* CFrame.Angles(0, 0, 0),
+
+	Right = CFrame.new(-0.2, -0.2, -0.2)
+		* CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(20)),
+}
+
+PoseLibrary.Combat.Bow = {
+	Left = CFrame.new(1, -0.2, -1.5)
+		* CFrame.Angles(0, 0, 0),
+
+	Right = CFrame.new(-0.2, -0.2, -0.2)
+		* CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(20)),
+}
+
+PoseLibrary.Combat.Default = PoseLibrary.Combat.OneHandedClose
+
+function PoseLibrary.GetPose(mode, itemClass, sway)
+	if mode == "Peace" then
+		return PoseLibrary.Peace(sway)
+	end
+
+	return PoseLibrary.Combat[itemClass] or PoseLibrary.Combat.Default
+end
+
+return PoseLibrary

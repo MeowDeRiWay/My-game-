@@ -1,0 +1,49 @@
+local BaseObjectDamage = {}
+
+local ctx = {}
+
+function BaseObjectDamage.Init(context)
+	ctx = context
+end
+
+function BaseObjectDamage.Run(player, object, itemName)
+	if not object then return end
+	if object:GetAttribute("BaseType") ~= "base" then return end
+
+	local health = object:GetAttribute("Health")
+	if not health then return end
+	
+	print("BASE DAMAGE ITEM:", itemName)
+	print("BASE DAMAGE CONFIG:", ctx.ItemConfig[itemName])
+
+	local itemConfig = ctx.ItemConfig[itemName] or {}
+
+	local result = ctx.DamageResolver.Resolve(
+		{
+			Damage = itemConfig.Damage or 1,
+			Penetration = itemConfig.Penetration or 0,
+		},
+		{
+			Protection = object:GetAttribute("Protection") or 0,
+			Resistance = object:GetAttribute("Resistance") or 0,
+			Absorption = object:GetAttribute("Absorption") or 0,
+		}
+	)
+
+	if ctx.DamagePopup then
+		ctx.DamagePopup:FireClient(player, object, result.Message)
+	end
+
+	if result.Blocked then
+		return
+	end
+
+	health -= result.FinalDamage
+	object:SetAttribute("Health", health)
+
+	if health <= 0 then
+		object:Destroy()
+	end
+end
+
+return BaseObjectDamage

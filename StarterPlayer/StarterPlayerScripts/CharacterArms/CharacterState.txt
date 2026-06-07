@@ -1,0 +1,13 @@
+local CharacterState = {}
+
+function CharacterState.ReadMode(player)
+	local value = player:GetAttribute("ActionMode")
+
+	if value == "Combat" or value == "Бій" or value == "Biy" then
+		return "Combat"
+	end
+
+	return "Peace"
+end
+
+return CharacterState

@@ -1,0 +1,92 @@
+local BaseObjectPlace = {}
+
+local ctx = {}
+
+function BaseObjectPlace.Init(context)
+	ctx = context
+end
+
+local function getModelTemplate(config, itemName)
+	local modelFolderName = config.ModelFolder
+	local modelName = config.ModelName
+
+	if not modelFolderName then
+		warn("У предмета немає ModelFolder:", itemName)
+		return nil
+	end
+
+	if not modelName then
+		warn("У предмета немає ModelName:", itemName)
+		return nil
+	end
+
+	local modelFolder = ctx.BaseObjectsStorage:FindFirstChild(modelFolderName)
+
+	if not modelFolder then
+		warn("Папка моделей не знайдена в Base.Obj:", modelFolderName)
+		return nil
+	end
+
+	local modelTemplate = modelFolder:FindFirstChild(modelName)
+
+	if not modelTemplate then
+		warn("Модель не знайдена в Base.Obj/" .. modelFolderName .. ":", modelName)
+		return nil
+	end
+
+	return modelTemplate
+end
+
+function BaseObjectPlace.Run(player, position, itemName)
+	local config = ctx.ItemConfig[itemName]
+
+	if not config then return end
+	if config.Type ~= "BasePlaceable" then return end
+
+	if not ctx.HasItem(player, itemName, 1) then
+		return
+	end
+
+	local modelTemplate = getModelTemplate(config, itemName)
+	if not modelTemplate then return end
+
+	ctx.RemoveItem(player, itemName, 1)
+
+	local object = modelTemplate:Clone()
+	object.Name = itemName
+	object.Parent = ctx.BaseObjectsFolder
+
+	object:PivotTo(CFrame.new(position.X, position.Y, position.Z))
+
+	for _, descendant in ipairs(object:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			descendant.Anchored = true
+			descendant.CanCollide = true
+		end
+	end
+
+	object:SetAttribute("ObjectType", config.ObjectType)
+	object:SetAttribute("ObjectId", config.ObjectId or itemName)
+
+	if config.StorageCapacity then
+		object:SetAttribute("StorageCapacity", config.StorageCapacity)
+	end
+
+	object:SetAttribute("BaseType", config.BaseType)
+	object:SetAttribute("MaterialType", config.MaterialType)
+
+	object:SetAttribute("Health", config.MaxHealth)
+	object:SetAttribute("MaxHealth", config.MaxHealth)
+
+	object:SetAttribute("Protection", config.Protection or 0)
+	object:SetAttribute("Resistance", config.Resistance or 0)
+	object:SetAttribute("Absorption", config.Absorption or 0)
+
+	if config.ObjectType == "storage" and ctx.ChestHandler then
+		ctx.ChestHandler.InitChest(object)
+	end
+
+	ctx.SendInventory(player)
+end
+
+return BaseObjectPlace

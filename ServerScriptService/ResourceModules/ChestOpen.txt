@@ -1,0 +1,35 @@
+local ChestOpen = {}
+
+local ChestUtils = require(script.Parent:WaitForChild("ChestUtils"))
+
+local ctx = {}
+
+function ChestOpen.Init(context)
+	ctx = context
+end
+
+function ChestOpen.InitChest(chest)
+	ChestUtils.InitChest(chest)
+end
+
+function ChestOpen.Run(player, chest)
+	print("CHEST OPEN CALLED")
+
+	if not ChestUtils.IsStorageChest(chest) then return end
+
+	ChestUtils.InitChest(chest)
+
+	local storedItem, storedAmount = ChestUtils.GetChestData(chest)
+
+	print("SENDING CHEST UI")
+
+	ctx.ChestRequest:FireClient(player, "Open", {
+		Chest = chest,
+		StoredItem = storedItem,
+		StoredAmount = storedAmount,
+		Capacity = ChestUtils.GetCapacity(chest),
+		Inventory = ctx.GetInventory(player),
+	})
+end
+
+return ChestOpen

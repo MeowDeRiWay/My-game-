@@ -1,0 +1,193 @@
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ProjectileHandler = {}
+
+local ctx = {
+	ItemConfig = nil,
+	GetInventory = nil,
+	RemoveItem = nil,
+	SendInventory = nil,
+	DamageResolver = nil,
+	DamagePopup = nil,
+}
+
+local projectileFolder = workspace:FindFirstChild("Projectiles")
+if not projectileFolder then
+	projectileFolder = Instance.new("Folder")
+	projectileFolder.Name = "Projectiles"
+	projectileFolder.Parent = workspace
+end
+
+local ProjectileModels = ReplicatedStorage
+	:WaitForChild("Base.Obj")
+	:WaitForChild("ProjectileModels")
+
+function ProjectileHandler.Init(context)
+	ctx.ItemConfig = context.ItemConfig
+	ctx.GetInventory = context.GetInventory
+	ctx.RemoveItem = context.RemoveItem
+	ctx.SendInventory = context.SendInventory
+	ctx.DamageResolver = context.DamageResolver
+	ctx.DamagePopup = context.DamagePopup
+end
+
+local function getRoot(player)
+	local character = player.Character
+	if not character then return nil end
+
+	return character:FindFirstChild("HumanoidRootPart")
+		or character:FindFirstChild("Root")
+		or character.PrimaryPart
+end
+
+local function prepareProjectile(model)
+	for _, obj in ipairs(model:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			obj.Anchored = true
+			obj.CanCollide = false
+			obj.CanTouch = false
+			obj.CanQuery = true
+		end
+	end
+end
+
+function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
+	if not player or not weaponName or not ammoName or not targetPosition then
+		return
+	end
+
+	local weaponConfig = ctx.ItemConfig[weaponName]
+	local ammoConfig = ctx.ItemConfig[ammoName]
+
+	if not weaponConfig or weaponConfig.Type ~= "RangeWeapon" then
+		return
+	end
+
+	if not ammoConfig or ammoConfig.Type ~= "Ammo" then
+		return
+	end
+
+	if not weaponConfig.AcceptedAmmoFamilies[ammoConfig.AmmoFamily] then
+		return
+	end
+
+	local inventory = ctx.GetInventory(player)
+	if not inventory then return end
+
+	if (inventory[ammoName] or 0) <= 0 then
+		return
+	end
+
+	local root = getRoot(player)
+	if not root then return end
+
+	if not ctx.RemoveItem(player, ammoName, 1) then
+		return
+	end
+
+	if ctx.SendInventory then
+		ctx.SendInventory(player)
+	end
+
+	task.wait(weaponConfig.ShotDelay or 0)
+
+	local sourceModel = ProjectileModels:FindFirstChild(ammoConfig.Projectile)
+	if not sourceModel then
+		warn("[ProjectileHandler] Projectile model not found:", ammoConfig.Projectile)
+		return
+	end
+
+	local projectile = sourceModel:Clone()
+	projectile.Name = "Projectile_" .. ammoName
+	projectile.Parent = projectileFolder
+
+	local startPosition = root.Position + root.CFrame.LookVector * 2 + Vector3.new(0, 1, 0)
+	local direction = (targetPosition - startPosition)
+
+	if direction.Magnitude <= 0.1 then
+		direction = root.CFrame.LookVector
+	else
+		direction = direction.Unit
+	end
+
+	prepareProjectile(projectile)
+	projectile:PivotTo(CFrame.lookAt(startPosition, startPosition + direction))
+
+	local speed = (ammoConfig.ProjectileSpeed or 10) * (weaponConfig.ProjectileSpeedMultiplier or 1)
+	local maxDistance = (ammoConfig.MaxDistance or 30) * (weaponConfig.MaxDistanceMultiplier or 1)
+
+	local damage = (ammoConfig.Damage or 1) * (weaponConfig.DamageMultiplier or 1)
+	local penetration = ammoConfig.Penetration or 0
+
+	local traveled = 0
+	local alive = true
+
+	local connection
+	connection = RunService.Heartbeat:Connect(function(dt)
+		if not alive then
+			if connection then connection:Disconnect() end
+			return
+		end
+
+		if not projectile or not projectile.Parent then
+			alive = false
+			return
+		end
+
+		local move = direction * speed * dt
+		traveled += move.Magnitude
+
+		local currentPivot = projectile:GetPivot()
+		local newPosition = currentPivot.Position + move
+
+		projectile:PivotTo(CFrame.lookAt(newPosition, newPosition + direction))
+
+		if traveled >= maxDistance then
+			projectile:Destroy()
+			alive = false
+			return
+		end
+
+		local rayParams = RaycastParams.new()
+		rayParams.FilterType = Enum.RaycastFilterType.Exclude
+		rayParams.FilterDescendantsInstances = {
+			player.Character,
+			projectile,
+		}
+
+		local result = workspace:Raycast(currentPivot.Position, move, rayParams)
+
+		if result then
+			local target = result.Instance
+
+			if target and target:GetAttribute("Health") then
+				local resolved = ctx.DamageResolver.Resolve(
+					{
+						Damage = damage,
+						Penetration = penetration,
+					},
+					{
+						Protection = target:GetAttribute("Protection") or 0,
+						Resistance = target:GetAttribute("Resistance") or 0,
+						Absorption = target:GetAttribute("Absorption") or 0,
+					}
+				)
+
+				if ctx.DamagePopup then
+					ctx.DamagePopup:FireClient(player, target, resolved.Message)
+				end
+
+				if not resolved.Blocked then
+					local hp = target:GetAttribute("Health") or 0
+					target:SetAttribute("Health", hp - resolved.FinalDamage)
+				end
+			end
+
+			projectile:Destroy()
+			alive = false
+		end
+	end)
+end
+
+return ProjectileHandler

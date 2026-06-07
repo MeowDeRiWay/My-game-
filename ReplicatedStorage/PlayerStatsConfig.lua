@@ -2,8 +2,8 @@ local PlayerStatsConfig = {
 	MaxHealth = 20,
 	MaxStamina = 100,
 
-	NormalSpeed = 5,
-	SprintSpeed = 15,
+	NormalSpeed = 3,
+	SprintSpeed = 10,
 
 	StaminaDrainPerSecond = 10,
 	StaminaRegenPerSecond = 3,
