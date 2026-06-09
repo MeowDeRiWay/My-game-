@@ -9,20 +9,34 @@ local ShootRequest = Remotes:WaitForChild("ShootRequest")
 
 local WorldInteraction = {}
 
-local function getBaseObjectFromTarget(target)
-	if not target then return nil end
-
-	local model = target:FindFirstAncestorOfClass("Model")
-
-	if model and model:GetAttribute("BaseType") == "base" then
-		return model
+local function getObjectWithAttribute(target, attributeName, expectedValue)
+	if not target then
+		return nil
 	end
 
-	if target:GetAttribute("BaseType") == "base" then
-		return target
+	local current = target
+
+	while current do
+		local value = current:GetAttribute(attributeName)
+
+		if value ~= nil then
+			if expectedValue == nil or value == expectedValue then
+				return current
+			end
+		end
+
+		current = current.Parent
 	end
 
 	return nil
+end
+
+local function getBaseObjectFromTarget(target)
+	return getObjectWithAttribute(target, "BaseType", "base")
+end
+
+local function getResourceFromTarget(target)
+	return getObjectWithAttribute(target, "ResourceType")
 end
 
 function WorldInteraction.Create(params)
@@ -34,6 +48,7 @@ function WorldInteraction.Create(params)
 	function controller.HandleClick(activeItem, activeAmmo, combatMode)
 		local target = mouse.Target
 		local baseObject = getBaseObjectFromTarget(target)
+		local resourceObject = getResourceFromTarget(target)
 
 		if combatMode == true then
 			local activeConfig = activeItem and ItemConfig[activeItem]
@@ -43,8 +58,8 @@ function WorldInteraction.Create(params)
 				return
 			end
 
-			if target and target:GetAttribute("ResourceType") then
-				HitResource:FireServer(target, activeItem)
+			if resourceObject then
+				HitResource:FireServer(resourceObject, activeItem)
 				return
 			end
 
