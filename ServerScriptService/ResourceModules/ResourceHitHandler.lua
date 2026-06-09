@@ -75,7 +75,7 @@ function ResourceHitHandler.Handle(player, resource, itemName)
 
 	if result.Blocked then
 		return
-	end
+	endі
 
 	if ctx.AddItem then
 		ctx.AddItem(player, dropItem, harvestAmount)

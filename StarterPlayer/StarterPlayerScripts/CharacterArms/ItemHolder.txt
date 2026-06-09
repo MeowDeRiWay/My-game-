@@ -8,9 +8,15 @@ local ITEM_MODELS = ReplicatedStorage
 
 local TOOLS_MODELS = ITEM_MODELS:WaitForChild("Tools")
 
+local RANGE_WEAPONS_MODELS = ITEM_MODELS:WaitForChild("RangeWeapons")
+local PREHISTORICAL_RANGE_MODELS = RANGE_WEAPONS_MODELS:WaitForChild("Prehistorical")
+
 local MODEL_FOLDERS = {
 	OneHandedClose = TOOLS_MODELS:WaitForChild("OneHandedClose"),
 	TwoHandedClose = TOOLS_MODELS:WaitForChild("TwoHandedClose"),
+
+	Bow = PREHISTORICAL_RANGE_MODELS,
+	Mushket = PREHISTORICAL_RANGE_MODELS,
 }
 
 local heldModel = nil
@@ -114,7 +120,11 @@ end
 function ItemHolder.Update(player, data)
 	local itemClass = player:GetAttribute("ActiveItemClass")
 	local modelName = player:GetAttribute("ActiveItemModel")
-
+	
+	if itemClass == "BasePlaceable" then
+		ItemHolder.Clear()
+		return
+	end
 	if not itemClass or not modelName or modelName == "" then
 		ItemHolder.Clear()
 		return

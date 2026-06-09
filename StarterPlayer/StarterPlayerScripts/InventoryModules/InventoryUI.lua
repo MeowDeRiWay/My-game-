@@ -87,7 +87,7 @@ function InventoryUI.Create(player)
 
 	local activeLabel = Instance.new("TextLabel")
 	activeLabel.Size = UDim2.new(0, 300, 0, 30)
-	activeLabel.Position = UDim2.new(0, 20, 1, -80)
+	activeLabel.Position = UDim2.new(0, 20, 1, -115)
 	activeLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 	activeLabel.BackgroundTransparency = 0.15
 	activeLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
@@ -96,6 +96,18 @@ function InventoryUI.Create(player)
 	activeLabel.TextXAlignment = Enum.TextXAlignment.Left
 	activeLabel.Text = "  Активний: -"
 	activeLabel.Parent = gui
+
+	local ammoLabel = Instance.new("TextLabel")
+	ammoLabel.Size = UDim2.new(0, 300, 0, 30)
+	ammoLabel.Position = UDim2.new(0, 20, 1, -80)
+	ammoLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	ammoLabel.BackgroundTransparency = 0.15
+	ammoLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+	ammoLabel.Font = Enum.Font.SourceSansBold
+	ammoLabel.TextSize = 18
+	ammoLabel.TextXAlignment = Enum.TextXAlignment.Left
+	ammoLabel.Text = "  Набої: -"
+	ammoLabel.Parent = gui
 
 	local modeLabel = Instance.new("TextLabel")
 	modeLabel.Size = UDim2.new(0, 300, 0, 30)
@@ -109,15 +121,6 @@ function InventoryUI.Create(player)
 	modeLabel.Text = "  Режим: Спокій"
 	modeLabel.Parent = gui
 
-	local ammoSlot = Instance.new("TextLabel")
-	ammoSlot.Size = UDim2.new(0, 140, 0, 45)
-	ammoSlot.Position = UDim2.new(0.5, -310, 1, -60)
-	ammoSlot.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-	ammoSlot.TextColor3 = Color3.fromRGB(255, 255, 255)
-	ammoSlot.TextScaled = true
-	ammoSlot.Text = "Набої: пусто"
-	ammoSlot.Parent = gui
-	
 	local function clearList()
 		for _, child in ipairs(itemList:GetChildren()) do
 			if child:IsA("TextButton") or child:IsA("TextLabel") then
@@ -138,6 +141,10 @@ function InventoryUI.Create(player)
 		activeLabel.Text = "  Активний: " .. tostring(itemName or "-")
 	end
 
+	function self.SetActiveAmmo(itemName)
+		ammoLabel.Text = "  Набої: " .. tostring(itemName or "-")
+	end
+
 	function self.SetCombatMode(enabled)
 		if enabled then
 			modeLabel.Text = "  Режим: Бій"
@@ -146,11 +153,7 @@ function InventoryUI.Create(player)
 		end
 	end
 
-	function controller.SetActiveAmmo(itemName)
-		ammoSlot.Text = "Набої: " .. (itemName or "Пусто")
-	end
-
-	function self.RefreshInventory(inventory, onSelectItem, activeItem)
+	function self.RefreshInventory(inventory, onSelectItem, activeItem, activeAmmo)
 		clearList()
 
 		local y = 5
@@ -168,8 +171,11 @@ function InventoryUI.Create(player)
 				button.Parent = itemList
 
 				if activeItem == itemName then
-					button.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-					button.Text = "▶  " .. itemName .. " x" .. amount
+					button.BackgroundColor3 = Color3.fromRGB(65, 95, 65)
+					button.Text = "⚔  " .. itemName .. " x" .. amount
+				elseif activeAmmo == itemName then
+					button.BackgroundColor3 = Color3.fromRGB(75, 75, 105)
+					button.Text = "➤  " .. itemName .. " x" .. amount
 				else
 					button.Text = "  " .. itemName .. " x" .. amount
 				end
@@ -186,6 +192,7 @@ function InventoryUI.Create(player)
 
 		itemList.CanvasSize = UDim2.new(0, 0, 0, y)
 		self.SetActiveItem(activeItem)
+		self.SetActiveAmmo(activeAmmo)
 	end
 
 	return self

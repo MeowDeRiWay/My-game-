@@ -1,33 +1,67 @@
 local Config = require(script.Parent:WaitForChild("Config"))
-local CharacterState = require(script.Parent:WaitForChild("CharacterState"))
-local PoseLibrary = require(script.Parent:WaitForChild("PoseLibrary"))
 
-local ArmAnimator = {}
+local ArmBuilder = {}
 
-function ArmAnimator.Update(dt, player, data)
-	if not data.LeftMotor or not data.RightMotor then
-		return
-	end
-
-	data.IdleTime += dt
-
-	local mode = CharacterState.ReadMode(player)
-	local itemClass = player:GetAttribute("ActiveItemClass")
-
-	local sway = math.sin(data.IdleTime * 3) * 0.04
-	local pose = PoseLibrary.GetPose(mode, itemClass, sway)
-
-	local alpha = math.clamp(dt * Config.ARM_LERP_SPEED, 0, 1)
-
-	data.LeftMotor.C0 = data.LeftMotor.C0:Lerp(
-		Config.LEFT_OFFSET * pose.Left,
-		alpha
-	)
-
-	data.RightMotor.C0 = data.RightMotor.C0:Lerp(
-		Config.RIGHT_OFFSET * pose.Right,
-		alpha
-	)
+local function findRoot(character)
+	return character:FindFirstChild("HumanoidRootPart")
+		or character:FindFirstChild("Root")
+		or character.PrimaryPart
 end
 
-return ArmAnimator
+local function createArm(name, parent)
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Size = Config.ARM_SIZE
+	part.Color = Config.ARM_COLOR
+	part.Material = Enum.Material.SmoothPlastic
+	part.CanCollide = false
+	part.CanTouch = false
+	part.CanQuery = false
+	part.Massless = true
+	part.Anchored = false
+	part.Parent = parent
+
+	return part
+end
+
+local function createMotor(name, part0, part1, offset)
+	local motor = Instance.new("Motor6D")
+	motor.Name = name
+	motor.Part0 = part0
+	motor.Part1 = part1
+	motor.C0 = offset
+	motor.C1 = CFrame.new()
+	motor.Parent = part0
+
+	return motor
+end
+
+function ArmBuilder.Build(character)
+	local root = findRoot(character)
+
+	if not root then
+		warn("[ArmBuilder] Root part not found")
+		return nil
+	end
+
+	local leftArm = createArm("LeftBlockArm", character)
+	local rightArm = createArm("RightBlockArm", character)
+
+	local leftMotor = createMotor("LeftArmMotor", root, leftArm, Config.LEFT_OFFSET)
+	local rightMotor = createMotor("RightArmMotor", root, rightArm, Config.RIGHT_OFFSET)
+
+	return {
+		Character = character,
+		Root = root,
+
+		LeftArm = leftArm,
+		RightArm = rightArm,
+
+		LeftMotor = leftMotor,
+		RightMotor = rightMotor,
+
+		IdleTime = 0,
+	}
+end
+
+return ArmBuilder

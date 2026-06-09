@@ -5,7 +5,6 @@ local ItemConfig = require(ReplicatedStorage:WaitForChild("ItemConfig"))
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local HitResource = Remotes:WaitForChild("HitResource")
 local BaseObjectRequest = Remotes:WaitForChild("BaseObjectRequest")
-
 local ShootRequest = Remotes:WaitForChild("ShootRequest")
 
 local WorldInteraction = {}
@@ -37,15 +36,15 @@ function WorldInteraction.Create(params)
 		local baseObject = getBaseObjectFromTarget(target)
 
 		if combatMode == true then
-			if target and target:GetAttribute("ResourceType") then
-				HitResource:FireServer(target, activeItem)
-				return
-			end
-			
 			local activeConfig = activeItem and ItemConfig[activeItem]
 
 			if activeConfig and activeConfig.Type == "RangeWeapon" then
 				ShootRequest:FireServer(activeItem, activeAmmo, mouse.Hit.Position)
+				return
+			end
+
+			if target and target:GetAttribute("ResourceType") then
+				HitResource:FireServer(target, activeItem)
 				return
 			end
 

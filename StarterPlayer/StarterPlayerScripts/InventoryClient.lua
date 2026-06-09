@@ -5,6 +5,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 
+local ItemConfig = require(ReplicatedStorage:WaitForChild("ItemConfig"))
+
 local Modules = script.Parent:WaitForChild("InventoryModules")
 
 local InventoryUI = require(Modules:WaitForChild("InventoryUI"))
@@ -31,28 +33,10 @@ local interaction = WorldInteraction.Create({
 	Preview = preview,
 })
 
-local refreshInventory
-
-local function updateActiveItemModel(itemName)
-	if itemName == "Грубий дерев'яний інструмент" then
-		player:SetAttribute("ActiveItemClass", "OneHandedClose")
-		player:SetAttribute("ActiveItemModel", "RoughWoodenToolModel")
-	elseif itemName == "Знаряддя праці" then
-		player:SetAttribute("ActiveItemClass", "OneHandedClose")
-		player:SetAttribute("ActiveItemModel", "MasterToolModel")
-	elseif itemName == "Заточена палка" then
-		player:SetAttribute("ActiveItemClass", "TwoHandedClose")
-		player:SetAttribute("ActiveItemModel", "RoughtSpearModel")
-	else
-		player:SetAttribute("ActiveItemClass", nil)
-		player:SetAttribute("ActiveItemModel", nil)
-	end
-end
-
 local function setActiveItem(itemName)
 	activeItem = itemName
 
-	local config = itemName and require(ReplicatedStorage:WaitForChild("ItemConfig"))[itemName]
+	local config = itemName and ItemConfig[itemName]
 
 	player:SetAttribute("ActiveItemName", activeItem)
 
@@ -77,25 +61,35 @@ local function setActiveAmmo(itemName)
 	end
 end
 
-refreshInventory = function()
+local function refreshInventory()
 	if activeItem and ((inventory[activeItem] or 0) <= 0) then
-		activeItem = nil
-		ui.SetActiveItem(nil)
-		preview.SetActiveItem(nil)
+		if (inventory["Рука"] or 0) > 0 then
+			setActiveItem("Рука")
+		else
+			setActiveItem(nil)
+		end
 	else
 		ui.SetActiveItem(activeItem)
 		preview.SetActiveItem(activeItem)
 	end
 
+	if activeAmmo and ((inventory[activeAmmo] or 0) <= 0) then
+		setActiveAmmo(nil)
+	else
+		ui.SetActiveAmmo(activeAmmo)
+	end
+
 	ui.RefreshInventory(inventory, function(itemName)
-		local config = require(ReplicatedStorage:WaitForChild("ItemConfig"))[itemName]
+		local config = ItemConfig[itemName]
 
 		if config and config.Type == "Ammo" then
 			setActiveAmmo(itemName)
 		else
 			setActiveItem(itemName)
 		end
-	end)
+
+		refreshInventory()
+	end, activeItem, activeAmmo)
 end
 
 InventoryUpdate.OnClientEvent:Connect(function(newInventory)
@@ -103,15 +97,18 @@ InventoryUpdate.OnClientEvent:Connect(function(newInventory)
 
 	if not activeItem or (inventory[activeItem] or 0) <= 0 then
 		if (inventory["Рука"] or 0) > 0 then
-			activeItem = "Рука"
+			setActiveItem("Рука")
 		else
-			activeItem = nil
+			setActiveItem(nil)
 		end
+	else
+		setActiveItem(activeItem)
 	end
 
-	ui.SetActiveItem(activeItem)
-	preview.SetActiveItem(activeItem)
-	updateActiveItemModel(activeItem)
+	if activeAmmo and (inventory[activeAmmo] or 0) <= 0 then
+		setActiveAmmo(nil)
+	end
+
 	refreshInventory()
 end)
 
@@ -128,7 +125,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		ui.SetCombatMode(combatMode)
 
 		player:SetAttribute("ActionMode", combatMode and "Бій" or "Спокій")
-		print("ActionMode =", player:GetAttribute("ActionMode"))
 
 		if combatMode then
 			preview.Clear()
@@ -144,4 +140,6 @@ end)
 
 ui.SetCombatMode(combatMode)
 player:SetAttribute("ActionMode", "Спокій")
+setActiveItem(activeItem)
+setActiveAmmo(activeAmmo)
 refreshInventory()

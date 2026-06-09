@@ -2,33 +2,25 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+
 local HitResource = Remotes:WaitForChild("HitResource")
 local InventoryUpdate = Remotes:WaitForChild("InventoryUpdate")
 local ResourcePopupEvent = Remotes:WaitForChild("ResourcePopupEvent")
 local DamagePopupEvent = Remotes:WaitForChild("DamagePopupEvent")
 
-local ProjectileHandler = require(script.Parent.ResourceModules.ProjectileHandler)
-local ShootRequest = Remotes:WaitForChild("ShootRequest")
-
-local CraftRequest = ReplicatedStorage:WaitForChild("CraftRequest")
-local CraftingConfig = require(ReplicatedStorage:WaitForChild("CraftingConfig"))
-local ItemConfig = require(ReplicatedStorage:WaitForChild("ItemConfig"))
-local DamageResolver = require(ReplicatedStorage:WaitForChild("DamageResolver"))
-
-local BaseObjectsStorage = ReplicatedStorage:WaitForChild("Base.Obj")
-local Era1BaseObjects = BaseObjectsStorage:WaitForChild("Era_1")
-
-local ResourceHitHandler = require(script.Parent.ResourceModules.ResourceHitHandler)
-local BaseObjectHandler = require(script.Parent.ResourceModules.BaseObjectHandler)
-local ChestHandler = require(script.Parent.ResourceModules.ChestHandler)
-
-local StarterPack = require(script:WaitForChild("StarterPack"))
-
-local inventories = {}
-
-local RESPAWN_TIME = 5
+local ShootRequest = Remotes:FindFirstChild("ShootRequest")
+if not ShootRequest then
+	ShootRequest = Instance.new("RemoteEvent")
+	ShootRequest.Name = "ShootRequest"
+	ShootRequest.Parent = Remotes
+end
 
 local BaseObjectRequest = Remotes:FindFirstChild("BaseObjectRequest")
+if not BaseObjectRequest then
+	BaseObjectRequest = Instance.new("RemoteEvent")
+	BaseObjectRequest.Name = "BaseObjectRequest"
+	BaseObjectRequest.Parent = Remotes
+end
 
 local ChestRequest = Remotes:FindFirstChild("ChestRequest")
 if not ChestRequest then
@@ -37,14 +29,25 @@ if not ChestRequest then
 	ChestRequest.Parent = Remotes
 end
 
-if not BaseObjectRequest then
-	BaseObjectRequest = Instance.new("RemoteEvent")
-	BaseObjectRequest.Name = "BaseObjectRequest"
-	BaseObjectRequest.Parent = Remotes
-end
+local CraftRequest = ReplicatedStorage:WaitForChild("CraftRequest")
+
+local CraftingConfig = require(ReplicatedStorage:WaitForChild("CraftingConfig"))
+local ItemConfig = require(ReplicatedStorage:WaitForChild("ItemConfig"))
+local DamageResolver = require(ReplicatedStorage:WaitForChild("DamageResolver"))
+
+local BaseObjectsStorage = ReplicatedStorage:WaitForChild("Base.Obj")
+
+local ResourceHitHandler = require(script.Parent.ResourceModules.ResourceHitHandler)
+local BaseObjectHandler = require(script.Parent.ResourceModules.BaseObjectHandler)
+local ChestHandler = require(script.Parent.ResourceModules.ChestHandler)
+local ProjectileHandler = require(script.Parent.ResourceModules.ProjectileHandler)
+
+local StarterPack = require(script:WaitForChild("StarterPack"))
+
+local inventories = {}
+local RESPAWN_TIME = 5
 
 local baseObjectsFolder = workspace:FindFirstChild("BaseObjects")
-
 if not baseObjectsFolder then
 	baseObjectsFolder = Instance.new("Folder")
 	baseObjectsFolder.Name = "BaseObjects"
@@ -81,6 +84,11 @@ local function removeItem(player, itemName, amount)
 	end
 
 	inventories[player][itemName] = currentAmount - amount
+
+	if inventories[player][itemName] <= 0 then
+		inventories[player][itemName] = nil
+	end
+
 	return true
 end
 
@@ -116,13 +124,48 @@ ResourceHitHandler.Init({
 	SpawnTime = RESPAWN_TIME,
 })
 
-ProjectileHandler.Init({
+BaseObjectHandler.Init({
 	ItemConfig = ItemConfig,
+	DamageResolver = DamageResolver,
+
+	ChestHandler = ChestHandler,
+
+	BaseObjectsStorage = BaseObjectsStorage,
+	BaseObjectsFolder = baseObjectsFolder,
+
+	HasItem = hasItem,
+	RemoveItem = removeItem,
+	SendInventory = sendInventory,
+
+	BaseObjectRequest = BaseObjectRequest,
+	DamagePopup = DamagePopupEvent,
+})
+
+ChestHandler.Init({
+	ItemConfig = ItemConfig,
+
 	GetInventory = function(player)
 		return inventories[player]
 	end,
+
+	HasItem = hasItem,
+	AddItem = addItem,
 	RemoveItem = removeItem,
 	SendInventory = sendInventory,
+
+	ChestRequest = ChestRequest,
+})
+
+ProjectileHandler.Init({
+	ItemConfig = ItemConfig,
+
+	GetInventory = function(player)
+		return inventories[player]
+	end,
+
+	RemoveItem = removeItem,
+	SendInventory = sendInventory,
+
 	DamageResolver = DamageResolver,
 	DamagePopup = DamagePopupEvent,
 })
@@ -141,35 +184,6 @@ Players.PlayerAdded:Connect(function(player)
 
 	forceInventoryUpdate()
 end)
-
-BaseObjectHandler.Init({
-	ItemConfig = ItemConfig,
-	DamageResolver = DamageResolver,
-	
-	ChestHandler = ChestHandler,
-	
-	BaseObjectsStorage = BaseObjectsStorage,
-	BaseObjectsFolder = baseObjectsFolder,
-
-	HasItem = hasItem,
-	RemoveItem = removeItem,
-	SendInventory = sendInventory,
-
-	BaseObjectRequest = BaseObjectRequest,
-	DamagePopup = DamagePopupEvent,
-})
-
-ChestHandler.Init({
-	ItemConfig = ItemConfig,
-	GetInventory = function(player)
-		return inventories[player]
-	end,
-	HasItem = hasItem,
-	AddItem = addItem,
-	RemoveItem = removeItem,
-	SendInventory = sendInventory,
-	ChestRequest = ChestRequest,
-})
 
 Players.PlayerRemoving:Connect(function(player)
 	inventories[player] = nil
@@ -230,12 +244,10 @@ CraftRequest.OnServerEvent:Connect(function(player, craftId)
 end)
 
 HitResource.OnServerEvent:Connect(function(player, tree, itemName)
-	print("SERVER RESOURCE HIT ITEM:", itemName)
 	ResourceHitHandler.Handle(player, tree, itemName)
 end)
 
 BaseObjectRequest.OnServerEvent:Connect(function(player, action, data, itemName)
-	print("SERVER BASE ACTION:", action, "ITEM:", itemName)
 	BaseObjectHandler.Handle(player, action, data, itemName)
 end)
 

@@ -12,6 +12,8 @@ local ctx = {
 	DamagePopup = nil,
 }
 
+local playerWeaponState = {}
+
 local projectileFolder = workspace:FindFirstChild("Projectiles")
 if not projectileFolder then
 	projectileFolder = Instance.new("Folder")
@@ -22,6 +24,10 @@ end
 local ProjectileModels = ReplicatedStorage
 	:WaitForChild("Base.Obj")
 	:WaitForChild("ProjectileModels")
+
+-- Крути це значення, якщо стріла летить не тією стороною.
+-- Найчастіше для "хвостом вперед" допомагає 180 по Y.
+local PROJECTILE_ROTATION_FIX = CFrame.Angles(0, math.rad(90), 0)
 
 function ProjectileHandler.Init(context)
 	ctx.ItemConfig = context.ItemConfig
@@ -52,6 +58,24 @@ local function prepareProjectile(model)
 	end
 end
 
+local function getState(player)
+	if not playerWeaponState[player] then
+		playerWeaponState[player] = {
+			LastShotTime = 0,
+			IsReloading = false,
+		}
+	end
+
+	return playerWeaponState[player]
+end
+
+local function pivotProjectile(projectile, position, direction)
+	projectile:PivotTo(
+		CFrame.lookAt(position, position + direction)
+			* PROJECTILE_ROTATION_FIX
+	)
+end
+
 function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 	if not player or not weaponName or not ammoName or not targetPosition then
 		return
@@ -65,6 +89,10 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 	end
 
 	if not ammoConfig or ammoConfig.Type ~= "Ammo" then
+		return
+	end
+
+	if not weaponConfig.AcceptedAmmoFamilies then
 		return
 	end
 
@@ -82,7 +110,29 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 	local root = getRoot(player)
 	if not root then return end
 
+	local state = getState(player)
+	local now = os.clock()
+
+	local fireCooldown = weaponConfig.FireCooldown or 0
+	if now - state.LastShotTime < fireCooldown then
+		return
+	end
+
+	if state.IsReloading then
+		return
+	end
+
+	state.IsReloading = true
+
+	task.wait(weaponConfig.ReloadTime or 0)
+
+	if not player.Parent then
+		state.IsReloading = false
+		return
+	end
+
 	if not ctx.RemoveItem(player, ammoName, 1) then
+		state.IsReloading = false
 		return
 	end
 
@@ -91,6 +141,9 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 	end
 
 	task.wait(weaponConfig.ShotDelay or 0)
+
+	state.LastShotTime = os.clock()
+	state.IsReloading = false
 
 	local sourceModel = ProjectileModels:FindFirstChild(ammoConfig.Projectile)
 	if not sourceModel then
@@ -103,7 +156,7 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 	projectile.Parent = projectileFolder
 
 	local startPosition = root.Position + root.CFrame.LookVector * 2 + Vector3.new(0, 1, 0)
-	local direction = (targetPosition - startPosition)
+	local direction = targetPosition - startPosition
 
 	if direction.Magnitude <= 0.1 then
 		direction = root.CFrame.LookVector
@@ -112,7 +165,7 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 	end
 
 	prepareProjectile(projectile)
-	projectile:PivotTo(CFrame.lookAt(startPosition, startPosition + direction))
+	pivotProjectile(projectile, startPosition, direction)
 
 	local speed = (ammoConfig.ProjectileSpeed or 10) * (weaponConfig.ProjectileSpeedMultiplier or 1)
 	local maxDistance = (ammoConfig.MaxDistance or 30) * (weaponConfig.MaxDistanceMultiplier or 1)
@@ -123,10 +176,19 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 	local traveled = 0
 	local alive = true
 
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = {
+		player.Character,
+		projectile,
+	}
+
 	local connection
 	connection = RunService.Heartbeat:Connect(function(dt)
 		if not alive then
-			if connection then connection:Disconnect() end
+			if connection then
+				connection:Disconnect()
+			end
 			return
 		end
 
@@ -135,57 +197,61 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 			return
 		end
 
-		local move = direction * speed * dt
-		traveled += move.Magnitude
-
 		local currentPivot = projectile:GetPivot()
-		local newPosition = currentPivot.Position + move
-
-		projectile:PivotTo(CFrame.lookAt(newPosition, newPosition + direction))
-
-		if traveled >= maxDistance then
-			projectile:Destroy()
-			alive = false
-			return
-		end
-
-		local rayParams = RaycastParams.new()
-		rayParams.FilterType = Enum.RaycastFilterType.Exclude
-		rayParams.FilterDescendantsInstances = {
-			player.Character,
-			projectile,
-		}
-
+		local move = direction * speed * dt
 		local result = workspace:Raycast(currentPivot.Position, move, rayParams)
 
 		if result then
 			local target = result.Instance
 
-			if target and target:GetAttribute("Health") then
-				local resolved = ctx.DamageResolver.Resolve(
-					{
-						Damage = damage,
-						Penetration = penetration,
-					},
-					{
-						Protection = target:GetAttribute("Protection") or 0,
-						Resistance = target:GetAttribute("Resistance") or 0,
-						Absorption = target:GetAttribute("Absorption") or 0,
-					}
-				)
+			pivotProjectile(projectile, result.Position, direction)
 
-				if ctx.DamagePopup then
-					ctx.DamagePopup:FireClient(player, target, resolved.Message)
+			if target and target:GetAttribute("Health") then
+				local resolved = nil
+
+				if ctx.DamageResolver then
+					resolved = ctx.DamageResolver.Resolve(
+						{
+							Damage = damage,
+							Penetration = penetration,
+						},
+						{
+							Protection = target:GetAttribute("Protection") or 0,
+							Resistance = target:GetAttribute("Resistance") or 0,
+							Absorption = target:GetAttribute("Absorption") or 0,
+						}
+					)
 				end
 
-				if not resolved.Blocked then
+				if resolved then
+					if ctx.DamagePopup then
+						ctx.DamagePopup:FireClient(player, target, resolved.Message)
+					end
+
+					if not resolved.Blocked then
+						local hp = target:GetAttribute("Health") or 0
+						target:SetAttribute("Health", hp - resolved.FinalDamage)
+					end
+				else
 					local hp = target:GetAttribute("Health") or 0
-					target:SetAttribute("Health", hp - resolved.FinalDamage)
+					target:SetAttribute("Health", hp - damage)
 				end
 			end
 
 			projectile:Destroy()
 			alive = false
+			return
+		end
+
+		traveled += move.Magnitude
+
+		local newPosition = currentPivot.Position + move
+		pivotProjectile(projectile, newPosition, direction)
+
+		if traveled >= maxDistance then
+			projectile:Destroy()
+			alive = false
+			return
 		end
 	end)
 end

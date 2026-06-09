@@ -29,11 +29,19 @@ PoseLibrary.Combat.TwoHandedClose = {
 }
 
 PoseLibrary.Combat.Bow = {
-	Left = CFrame.new(1, -0.2, -1.5)
+	Left = CFrame.new(0.8, -0.2, -1)
 		* CFrame.Angles(0, 0, 0),
 
-	Right = CFrame.new(-0.2, -0.2, -0.2)
-		* CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(20)),
+	Right = CFrame.new(-0.8, -0.2, -1.5)
+		* CFrame.Angles(math.rad(0), math.rad(0), math.rad(0)),
+}
+
+PoseLibrary.Combat.Mushket = {
+	Left = CFrame.new(1.4, 0, -2.5)
+		* CFrame.Angles(0, 0, 0),
+
+	Right = CFrame.new(-0.2, -0.2, -1)
+		* CFrame.Angles(math.rad(-90), math.rad(0), math.rad(0)),
 }
 
 PoseLibrary.Combat.Default = PoseLibrary.Combat.OneHandedClose
