@@ -41,13 +41,23 @@ end
 local function getResourceParts(resourceRoot)
 	local parts = {}
 
-	if resourceRoot:IsA("BasePart") then
-		table.insert(parts, resourceRoot)
-	else
-		for _, obj in ipairs(resourceRoot:GetDescendants()) do
-			if obj:IsA("BasePart") then
-				table.insert(parts, obj)
-			end
+	local visualRoot = resourceRoot
+
+	if resourceRoot:IsA("Model") then
+		local main = resourceRoot:FindFirstChild("Main")
+
+		if main then
+			visualRoot = main
+		end
+	end
+
+	if visualRoot:IsA("BasePart") then
+		table.insert(parts, visualRoot)
+	end
+
+	for _, obj in ipairs(visualRoot:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			table.insert(parts, obj)
 		end
 	end
 
