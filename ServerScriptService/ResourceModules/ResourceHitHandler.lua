@@ -17,33 +17,91 @@ function ResourceHitHandler.Init(context)
 	ctx.DamagePopup = context.DamagePopup
 	ctx.DamageResolver = context.DamageResolver
 	ctx.ItemConfig = context.ItemConfig
-	ctx.SpawnTime = context.SpawnTime
+	ctx.SpawnTime = context.SpawnTime or 5
 end
 
-local function hideResource(resource)
-	resource.Transparency = 1
-	resource.CanCollide = false
-	resource.CanTouch = false
-	resource.CanQuery = false
+local function getResourceRoot(hitObject)
+	if not hitObject then return nil end
+
+	if hitObject:IsA("Model") and hitObject:GetAttribute("ResourceType") then
+		return hitObject
+	end
+
+	if hitObject:IsA("BasePart") and hitObject:GetAttribute("ResourceType") then
+		return hitObject
+	end
+
+	local model = hitObject:FindFirstAncestorOfClass("Model")
+	if model and model:GetAttribute("ResourceType") then
+		return model
+	end
+
+	return nil
 end
 
-local function restoreResource(resource)
-	resource.Transparency = 0
-	resource.CanCollide = true
-	resource.CanTouch = true
-	resource.CanQuery = true
+local function getResourceParts(resourceRoot)
+	local parts = {}
 
-	local maxHealth = resource:GetAttribute("MaxHealth")
-	resource:SetAttribute("Health", maxHealth)
-	resource:SetAttribute("Disabled", false)
+	if resourceRoot:IsA("BasePart") then
+		table.insert(parts, resourceRoot)
+		return parts
+	end
+
+	for _, obj in ipairs(resourceRoot:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			table.insert(parts, obj)
+		end
+	end
+
+	return parts
 end
 
-function ResourceHitHandler.Handle(player, resource, itemName)
+local function hideResource(resourceRoot)
+	for _, part in ipairs(getResourceParts(resourceRoot)) do
+		part.Transparency = 1
+		part.CanCollide = false
+		part.CanTouch = false
+		part.CanQuery = false
+	end
+end
+
+local function restoreResource(resourceRoot)
+	for _, part in ipairs(getResourceParts(resourceRoot)) do
+		local defaultTransparency = part:GetAttribute("DefaultTransparency")
+
+		if defaultTransparency == nil then
+			defaultTransparency = 0
+		end
+
+		part.Transparency = defaultTransparency
+		part.CanCollide = true
+		part.CanTouch = true
+		part.CanQuery = true
+	end
+
+	local maxHealth = resourceRoot:GetAttribute("MaxHealth") or 10
+	resourceRoot:SetAttribute("Health", maxHealth)
+	resourceRoot:SetAttribute("Disabled", false)
+end
+
+local function rememberDefaultTransparency(resourceRoot)
+	for _, part in ipairs(getResourceParts(resourceRoot)) do
+		if part:GetAttribute("DefaultTransparency") == nil then
+			part:SetAttribute("DefaultTransparency", part.Transparency)
+		end
+	end
+end
+
+function ResourceHitHandler.Handle(player, hitObject, itemName)
 	if not player then return end
+	if not hitObject then return end
+
+	local resource = getResourceRoot(hitObject)
 	if not resource then return end
-	if not resource:IsA("BasePart") then return end
-	if not resource:GetAttribute("ResourceType") then return end
+
 	if resource:GetAttribute("Disabled") == true then return end
+
+	rememberDefaultTransparency(resource)
 
 	local health = resource:GetAttribute("Health")
 	if not health or health <= 0 then return end
@@ -55,7 +113,7 @@ function ResourceHitHandler.Handle(player, resource, itemName)
 	end
 
 	local itemConfig = ctx.ItemConfig[itemName] or {}
-	local harvestAmount = itemConfig.HarvestAmount
+	local harvestAmount = itemConfig.HarvestAmount or 1
 
 	local result = ctx.DamageResolver.Resolve(
 		{
@@ -75,7 +133,7 @@ function ResourceHitHandler.Handle(player, resource, itemName)
 
 	if result.Blocked then
 		return
-	endі
+	end
 
 	if ctx.AddItem then
 		ctx.AddItem(player, dropItem, harvestAmount)
