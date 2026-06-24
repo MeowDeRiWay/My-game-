@@ -118,9 +118,13 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.KeyCode == Enum.KeyCode.B then
 		inventoryOpen = not inventoryOpen
 		ui.SetInventoryVisible(inventoryOpen)
+
+		if _G.SetGameplayUIOpen then
+			_G.SetGameplayUIOpen(inventoryOpen)
+		end
 	end
 
-	if input.KeyCode == Enum.KeyCode.Q then
+	if input.KeyCode == Enum.KeyCode.Q and not inventoryOpen then
 		combatMode = not combatMode
 		ui.SetCombatMode(combatMode)
 
