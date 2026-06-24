@@ -34,12 +34,13 @@ local ItemConfig = {
 	
 	["Заточена палка"] = {
 		Name = "Заточена палка",
-		Type = "MaleWeapon",
+		Type = "CloseCombat",
 		ToolClass = "TwoHandedClose",
 		ModelName = "RoughtSpearModel",
 		Stackable = false,
 		Damage = 5,
 		Penetration = 2,
+		HarvestAmount = 0,
 		Icon = "",
 	},
 	
@@ -58,9 +59,9 @@ local ItemConfig = {
 		ModelName = "PrimitiveBowModel",
 
 		MagazineSize = 1,
-		ReloadTime = 1.2,
-		ShotDelay = 0.1,
-		FireCooldown = 0.9,
+		ReloadTime = 0,
+		ShotDelay = 0,
+		FireCooldown = 2,
 
 		DamageMultiplier = 1.0,
 		ProjectileSpeedMultiplier = 1.0,
@@ -80,9 +81,11 @@ local ItemConfig = {
 
 		Damage = 10,
 		Penetration = 2,
-
-		ProjectileSpeed = 10,
-		MaxDistance = 30,
+		
+		HarvestAmount = 0,
+		
+		ProjectileSpeed = 80,
+		MaxDistance = 250,
 
 		Icon = "",
 	},
@@ -127,8 +130,8 @@ local ItemConfig = {
 		Icon = "",
 	},
 	
-	["Примітивний сундук"] = {
-		Name = "Примітивний сундук",
+	["Ящик"] = {
+		Name = "Ящик",
 		Type = "BasePlaceable",
 		Stackable = true,
 
@@ -173,7 +176,7 @@ local ItemConfig = {
 		Name = "Знаряддя праці",
 		Type = "Tool",
 		ToolClass = "OneHandedClose",
-		ModelName = "MasterToolModel",
+		ModelName = "WoodenToolModel",
 		Stackable = false,
 		Damage = 1,
 		HarvestAmount = 3,
@@ -181,8 +184,8 @@ local ItemConfig = {
 		Icon = "",
 	},
 	
-	["Проста лопата"] = {
-		Name = "Проста лопата",
+	["Кам'яна лопата"] = {
+		Name = "Кам'яна лопата",
 		Type = "Tool",
 		ToolClass = "OneHandedClose",
 		Stackable = false,
@@ -192,8 +195,8 @@ local ItemConfig = {
 		Icon = "",
 	},
 	
-	["Стіл майстра"] = {
-		Name = "Стіл майстра",
+	["Робочий стіл"] = {
+		Name = "Робочий стіл",
 		Type = "BasePlaceable",
 		Stackable = true,
 
@@ -209,6 +212,52 @@ local ItemConfig = {
 		Resistance = 0,
 		Absorption = 0,
 		MaxHealth = 10,
+		Icon = "",
+	},
+	
+	["Мушкет"] = {
+		Name = "Мушкет",
+		Type = "RangeWeapon",
+		ToolClass = "Mushket",
+
+		Stackable = false,
+
+		AcceptedAmmoFamilies = {
+			MushketBall = true,
+		},
+
+		ModelFolder = "Prehistorical",
+		ModelName = "MushketModel",
+
+		MagazineSize = 1,
+		ReloadTime = 0,
+		ShotDelay = 0,
+		FireCooldown = 1,
+
+		DamageMultiplier = 1.0,
+		ProjectileSpeedMultiplier = 1.0,
+		MaxDistanceMultiplier = 1.0,
+
+		Icon = "",
+	},
+	
+	["Мушкетна куля"] = {
+		Name = "Мушкетна куля",
+		Type = "Ammo",
+
+		AmmoFamily = "MushketBall",
+		Projectile = "MushketBallModel",
+
+		Stackable = true,
+
+		Damage = 10,
+		Penetration = 2,
+		
+		HarvestAmount = 0,
+		
+		ProjectileSpeed = 350,
+		MaxDistance = 250,
+
 		Icon = "",
 	},
 }
