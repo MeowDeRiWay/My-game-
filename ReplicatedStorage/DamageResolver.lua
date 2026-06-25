@@ -26,7 +26,7 @@ function DamageResolver.Resolve(data)
 
 	if penetration < protection then
 		result.Blocked = true
-		result.Message = "Не пробив"
+		result.Message = "ЗХСТ"
 		return result
 	end
 
@@ -41,7 +41,7 @@ function DamageResolver.Resolve(data)
 	end
 
 	result.FinalDamage = finalDamage
-	result.Message = finalDamage > 0 and "Пробив" or "Без шкоди"
+	result.Message = finalDamage > 0 and tostring(finalDamage) or "Без шкоди"
 
 	if targetType == "Resource" and itemClass == "Tool" then
 		result.ShouldGiveResource = true
