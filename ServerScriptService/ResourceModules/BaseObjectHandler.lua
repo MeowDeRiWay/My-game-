@@ -1,9 +1,15 @@
 local BaseObjectHandler = {}
 
+local BaseObjectPlace = require(script.Parent:WaitForChild("BaseObjectPlace"))
+local BaseObjectInteract = require(script.Parent:WaitForChild("BaseObjectInteract"))
+
 local context = nil
 
 function BaseObjectHandler.Init(ctx)
 	context = ctx
+
+	BaseObjectPlace.Init(ctx)
+	BaseObjectInteract.Init(ctx)
 end
 
 function BaseObjectHandler.Handle(player, action, data, itemName)
@@ -13,12 +19,12 @@ function BaseObjectHandler.Handle(player, action, data, itemName)
 	end
 
 	if action == "Place" then
-		context.BaseObjectPlace.Run(player, data, itemName)
+		BaseObjectPlace.Run(player, data, itemName)
 		return
 	end
 
 	if action == "Interact" then
-		context.BaseObjectInteract.Run(player, data, itemName)
+		BaseObjectInteract.Run(player, data)
 		return
 	end
 
