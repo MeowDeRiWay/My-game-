@@ -9,6 +9,7 @@ local ResourcePopupEvent = Remotes:WaitForChild("ResourcePopupEvent")
 local DamagePopupEvent = Remotes:WaitForChild("DamagePopupEvent")
 
 local ShootRequest = Remotes:FindFirstChild("ShootRequest")
+
 if not ShootRequest then
 	ShootRequest = Instance.new("RemoteEvent")
 	ShootRequest.Name = "ShootRequest"
@@ -37,12 +38,14 @@ local DamageResolver = require(ReplicatedStorage:WaitForChild("DamageResolver"))
 
 local BaseObjectsStorage = ReplicatedStorage:WaitForChild("Base.Obj")
 
-local ObjectHitHandler = require(script.ResourceModules:WaitForChild("ObjectHitHandler"))
-local BaseObjectHandler = require(script.Parent.ResourceModules.BaseObjectHandler)
-local ChestHandler = require(script.Parent.ResourceModules.ChestHandler)
-local ProjectileHandler = require(script.Parent.ResourceModules.ProjectileHandler)
+local ResourceModules = script.Parent:WaitForChild("ResourceModules")
 
-local StarterPack = require(script:WaitForChild("StarterPack"))
+local ObjectHitHandler = require(ResourceModules:WaitForChild("ObjectHitHandler"))
+local BaseObjectHandler = require(ResourceModules:WaitForChild("BaseObjectHandler"))
+local ChestHandler = require(ResourceModules:WaitForChild("ChestHandler"))
+local ProjectileHandler = require(ResourceModules:WaitForChild("ProjectileHandler"))
+
+local StarterPack = require(script.Parent:WaitForChild("StarterPack"))
 
 local inventories = {}
 local RESPAWN_TIME = 5
