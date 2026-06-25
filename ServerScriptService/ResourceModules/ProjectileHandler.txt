@@ -25,8 +25,6 @@ local ProjectileModels = ReplicatedStorage
 	:WaitForChild("Base.Obj")
 	:WaitForChild("ProjectileModels")
 
--- Крути це значення, якщо стріла летить не тією стороною.
--- Найчастіше для "хвостом вперед" допомагає 180 по Y.
 local PROJECTILE_ROTATION_FIX = CFrame.Angles(0, math.rad(90), 0)
 
 function ProjectileHandler.Init(context)
@@ -71,9 +69,77 @@ end
 
 local function pivotProjectile(projectile, position, direction)
 	projectile:PivotTo(
-		CFrame.lookAt(position, position + direction)
-			* PROJECTILE_ROTATION_FIX
+		CFrame.lookAt(position, position + direction) * PROJECTILE_ROTATION_FIX
 	)
+end
+
+local function findDamageTarget(instance)
+	local current = instance
+
+	while current and current ~= workspace do
+		if current:GetAttribute("Health") ~= nil then
+			return current
+		end
+
+		current = current.Parent
+	end
+
+	return nil
+end
+
+local function applyProjectileDamage(player, target, ammoConfig, weaponConfig)
+	if not target then return end
+
+	local damage = (ammoConfig.Damage or 1) * (weaponConfig.DamageMultiplier or 1)
+	local penetration = ammoConfig.Penetration or 0
+
+	local resolved = nil
+
+	if ctx.DamageResolver then
+		resolved = ctx.DamageResolver.Resolve({
+			Item = {
+				Damage = damage,
+				Penetration = penetration,
+				Class = ammoConfig.Type or "Ammo",
+				HarvestAmount = 0,
+			},
+
+			Target = {
+				Protection = target:GetAttribute("Protection") or 0,
+				Resistance = target:GetAttribute("Resistance") or 0,
+				Absorption = target:GetAttribute("Absorption") or 0,
+				TargetType = target:GetAttribute("TargetType") or "Resource",
+				ResourceType = target:GetAttribute("ResourceType"),
+			}
+		})
+	end
+
+	if not resolved then
+		local hp = target:GetAttribute("Health") or 0
+		target:SetAttribute("Health", math.max(0, hp - damage))
+
+		if ctx.DamagePopup then
+			ctx.DamagePopup:FireClient(player, target, tostring(damage))
+		end
+
+		return
+	end
+
+	if ctx.DamagePopup then
+		ctx.DamagePopup:FireClient(player, target, resolved.Message or tostring(resolved.FinalDamage or 0))
+	end
+
+	if resolved.Blocked then
+		return
+	end
+
+	local finalDamage = resolved.FinalDamage or 0
+	if finalDamage <= 0 then
+		return
+	end
+
+	local hp = target:GetAttribute("Health") or 0
+	target:SetAttribute("Health", math.max(0, hp - finalDamage))
 end
 
 function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
@@ -156,8 +222,8 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 	projectile.Parent = projectileFolder
 
 	local startPosition = root.Position + root.CFrame.LookVector * 2 + Vector3.new(0, 1, 0)
-	local direction = targetPosition - startPosition
 
+	local direction = targetPosition - startPosition
 	if direction.Magnitude <= 0.1 then
 		direction = root.CFrame.LookVector
 	else
@@ -169,9 +235,6 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 
 	local speed = (ammoConfig.ProjectileSpeed or 10) * (weaponConfig.ProjectileSpeedMultiplier or 1)
 	local maxDistance = (ammoConfig.MaxDistance or 30) * (weaponConfig.MaxDistanceMultiplier or 1)
-
-	local damage = (ammoConfig.Damage or 1) * (weaponConfig.DamageMultiplier or 1)
-	local penetration = ammoConfig.Penetration or 0
 
 	local traveled = 0
 	local alive = true
@@ -199,43 +262,17 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 
 		local currentPivot = projectile:GetPivot()
 		local move = direction * speed * dt
+
 		local result = workspace:Raycast(currentPivot.Position, move, rayParams)
 
 		if result then
-			local target = result.Instance
+			local hitInstance = result.Instance
+			local damageTarget = findDamageTarget(hitInstance)
 
 			pivotProjectile(projectile, result.Position, direction)
 
-			if target and target:GetAttribute("Health") then
-				local resolved = nil
-
-				if ctx.DamageResolver then
-					resolved = ctx.DamageResolver.Resolve(
-						{
-							Damage = damage,
-							Penetration = penetration,
-						},
-						{
-							Protection = target:GetAttribute("Protection") or 0,
-							Resistance = target:GetAttribute("Resistance") or 0,
-							Absorption = target:GetAttribute("Absorption") or 0,
-						}
-					)
-				end
-
-				if resolved then
-					if ctx.DamagePopup then
-						ctx.DamagePopup:FireClient(player, target, resolved.Message)
-					end
-
-					if not resolved.Blocked then
-						local hp = target:GetAttribute("Health") or 0
-						target:SetAttribute("Health", hp - resolved.FinalDamage)
-					end
-				else
-					local hp = target:GetAttribute("Health") or 0
-					target:SetAttribute("Health", hp - damage)
-				end
+			if damageTarget then
+				applyProjectileDamage(player, damageTarget, ammoConfig, weaponConfig)
 			end
 
 			projectile:Destroy()
