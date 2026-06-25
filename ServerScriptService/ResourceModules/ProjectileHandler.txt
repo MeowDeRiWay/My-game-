@@ -87,59 +87,52 @@ local function findDamageTarget(instance)
 	return nil
 end
 
-local function applyProjectileDamage(player, target, ammoConfig, weaponConfig)
-	if not target then return end
-
-	local damage = (ammoConfig.Damage or 1) * (weaponConfig.DamageMultiplier or 1)
-	local penetration = ammoConfig.Penetration or 0
-
-	local resolved = nil
-
-	if ctx.DamageResolver then
-		resolved = ctx.DamageResolver.Resolve({
-			Item = {
-				Damage = damage,
-				Penetration = penetration,
-				Class = ammoConfig.Type or "Ammo",
-				HarvestAmount = 0,
-			},
-
-			Target = {
-				Protection = target:GetAttribute("Protection") or 0,
-				Resistance = target:GetAttribute("Resistance") or 0,
-				Absorption = target:GetAttribute("Absorption") or 0,
-				TargetType = target:GetAttribute("TargetType") or "Resource",
-				ResourceType = target:GetAttribute("ResourceType"),
-			}
-		})
+local function applyProjectileDamage(player, target, ammoConfig, weaponConfig, currentDamage, currentPenetration)
+	if not target then
+		return false, currentDamage, currentPenetration
 	end
 
-	if not resolved then
-		local hp = target:GetAttribute("Health") or 0
-		target:SetAttribute("Health", math.max(0, hp - damage))
+	local protection = target:GetAttribute("Protection") or 0
 
-		if ctx.DamagePopup then
-			ctx.DamagePopup:FireClient(player, target, tostring(damage))
-		end
+	local resolved = ctx.DamageResolver.Resolve({
+		Item = {
+			Damage = currentDamage,
+			Penetration = currentPenetration,
+			Class = ammoConfig.Type or "Ammo",
+			HarvestAmount = 0,
+		},
 
-		return
-	end
+		Target = {
+			Protection = protection,
+			Resistance = target:GetAttribute("Resistance") or 0,
+			Absorption = target:GetAttribute("Absorption") or 0,
+			TargetType = target:GetAttribute("TargetType") or "Resource",
+			ResourceType = target:GetAttribute("ResourceType"),
+		}
+	})
 
 	if ctx.DamagePopup then
 		ctx.DamagePopup:FireClient(player, target, resolved.Message or tostring(resolved.FinalDamage or 0))
 	end
 
-	if resolved.Blocked then
-		return
+	if resolved.Blocked or currentPenetration <= protection then
+		return false, currentDamage, currentPenetration
 	end
 
 	local finalDamage = resolved.FinalDamage or 0
-	if finalDamage <= 0 then
-		return
+	if finalDamage > 0 then
+		local hp = target:GetAttribute("Health") or 0
+		target:SetAttribute("Health", math.max(0, hp - finalDamage))
 	end
 
-	local hp = target:GetAttribute("Health") or 0
-	target:SetAttribute("Health", math.max(0, hp - finalDamage))
+	local nextDamage = math.ceil(currentDamage / 2)
+	local nextPenetration = math.ceil(currentPenetration / 2)
+
+	if nextDamage <= 0 or nextPenetration <= 0 then
+		return false, nextDamage, nextPenetration
+	end
+
+	return true, nextDamage, nextPenetration
 end
 
 function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
@@ -239,6 +232,9 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 	local traveled = 0
 	local alive = true
 
+	local currentDamage = (ammoConfig.Damage or 1) * (weaponConfig.DamageMultiplier or 1)
+	local currentPenetration = ammoConfig.Penetration or 0
+
 	local rayParams = RaycastParams.new()
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
 	rayParams.FilterDescendantsInstances = {
@@ -270,9 +266,25 @@ function ProjectileHandler.Shoot(player, weaponName, ammoName, targetPosition)
 			local damageTarget = findDamageTarget(hitInstance)
 
 			pivotProjectile(projectile, result.Position, direction)
-
 			if damageTarget then
-				applyProjectileDamage(player, damageTarget, ammoConfig, weaponConfig)
+				local penetrated
+				penetrated, currentDamage, currentPenetration = applyProjectileDamage(
+					player,
+					damageTarget,
+					ammoConfig,
+					weaponConfig,
+					currentDamage,
+					currentPenetration
+				)
+
+				if penetrated then
+					table.insert(rayParams.FilterDescendantsInstances, damageTarget)
+
+					local continuePosition = result.Position + direction * 0.2
+					pivotProjectile(projectile, continuePosition, direction)
+
+					return
+				end
 			end
 
 			projectile:Destroy()
