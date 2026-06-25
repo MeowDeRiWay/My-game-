@@ -142,7 +142,7 @@ function InventoryUI.Create(player)
 	end
 
 	function self.SetActiveAmmo(itemName)
-		ammoLabel.Text = "  Набої: " .. tostring(itemName or "-")
+		ammoSlot.Text = "Набої: " .. (itemName or "Пусто")
 	end
 
 	function self.SetCombatMode(enabled)
