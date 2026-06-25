@@ -103,7 +103,11 @@ function WorldInteraction.Create(params)
 			local config = ItemConfig[activeItem]
 
 			if config and config.Type == "BasePlaceable" then
-				BaseObjectRequest:FireServer("Place", mouse.Hit.Position, activeItem)
+				BaseObjectRequest:FireServer("Place", {
+					Position = mouse.Hit.Position,
+					RotationY = preview.GetRotationY and preview.GetRotationY() or 0,
+				}, activeItem)
+
 				preview.Clear()
 				return
 			end
