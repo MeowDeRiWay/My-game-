@@ -40,7 +40,7 @@ local BaseObjectsStorage = ReplicatedStorage:WaitForChild("Base.Obj")
 
 local ResourceModules = script.Parent:WaitForChild("ResourceModules")
 
-local ObjectHitHandler = require(ResourceModules:WaitForChild("ObjectHitHandler"))
+local ObjectHitHandler = require(ResourceModules:WaitForChild("ResourceHitHandler"))
 local BaseObjectHandler = require(ResourceModules:WaitForChild("BaseObjectHandler"))
 local ChestHandler = require(ResourceModules:WaitForChild("ChestHandler"))
 local ProjectileHandler = require(ResourceModules:WaitForChild("ProjectileHandler"))
