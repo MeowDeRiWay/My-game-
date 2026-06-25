@@ -1,43 +1,55 @@
 local DamageResolver = {}
 
-DamageResolver.MinDamage = 1
+local MIN_DAMAGE = 1
 
-function DamageResolver.Resolve(damageInfo, defenseInfo)
-	damageInfo = damageInfo or {}
-	defenseInfo = defenseInfo or {}
+function DamageResolver.Resolve(data)
+	local item = data.Item or {}
+	local target = data.Target or {}
 
-	local baseDamage = damageInfo.Damage or DamageResolver.MinDamage
-	local penetration = damageInfo.Penetration or 0
+	local damage = item.Damage or item.damage or 1
+	local penetration = item.Penetration or item.penetration or 0
+	local itemClass = item.Class or item.ItemClass or item.Type or "Unknown"
 
-	local protection = defenseInfo.Protection or 0
-	local resistance = defenseInfo.Resistance or 0
-	local absorption = defenseInfo.Absorption or 0
+	local protection = target.Protection or 0
+	local resistance = target.Resistance or 0
+	local absorption = target.Absorption or 0
+	local targetType = target.TargetType or "Unknown"
 
-	-- Захист не пробитий
+	local result = {
+		Blocked = false,
+		FinalDamage = 0,
+		ShouldGiveResource = false,
+		ResourceType = nil,
+		ResourceAmount = 0,
+		Message = "",
+	}
+
 	if penetration < protection then
-		return {
-			Blocked = true,
-			FinalDamage = 0,
-			Message = "зхст",
-		}
+		result.Blocked = true
+		result.Message = "Не пробив"
+		return result
 	end
 
-	-- Тимчасова базова формула
-	local finalDamage = baseDamage
-
+	local finalDamage = damage
 	finalDamage = finalDamage * (1 - resistance)
 	finalDamage = finalDamage - absorption
-	finalDamage = math.floor(finalDamage + 0.5)
 
-	if finalDamage < DamageResolver.MinDamage then
-		finalDamage = DamageResolver.MinDamage
+	if finalDamage > 0 then
+		finalDamage = math.max(MIN_DAMAGE, math.floor(finalDamage + 0.5))
+	else
+		finalDamage = 0
 	end
 
-	return {
-		Blocked = false,
-		FinalDamage = finalDamage,
-		Message = tostring(finalDamage),
-	}
+	result.FinalDamage = finalDamage
+	result.Message = finalDamage > 0 and "Пробив" or "Без шкоди"
+
+	if targetType == "Resource" and itemClass == "Tool" then
+		result.ShouldGiveResource = true
+		result.ResourceType = target.ResourceType
+		result.ResourceAmount = item.HarvestAmount or item.harvestAmount or 1
+	end
+
+	return result
 end
 
 return DamageResolver
