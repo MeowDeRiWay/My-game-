@@ -10,9 +10,7 @@ local ShootRequest = Remotes:WaitForChild("ShootRequest")
 local WorldInteraction = {}
 
 local function getObjectWithAttribute(target, attributeName, expectedValue)
-	if not target then
-		return nil
-	end
+	if not target then return nil end
 
 	local current = target
 
@@ -39,6 +37,31 @@ local function getResourceFromTarget(target)
 	return getObjectWithAttribute(target, "ResourceType")
 end
 
+local function getAimPosition(mouse)
+	local camera = workspace.CurrentCamera
+	if not camera then
+		return mouse.Hit.Position
+	end
+
+	local ray = camera:ViewportPointToRay(mouse.X, mouse.Y)
+
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+	local player = game.Players.LocalPlayer
+	if player.Character then
+		rayParams.FilterDescendantsInstances = { player.Character }
+	end
+
+	local result = workspace:Raycast(ray.Origin, ray.Direction * 10000, rayParams)
+
+	if result then
+		return result.Position
+	end
+
+	return ray.Origin + ray.Direction * 10000
+end
+
 function WorldInteraction.Create(params)
 	local mouse = params.Mouse
 	local preview = params.Preview
@@ -54,7 +77,7 @@ function WorldInteraction.Create(params)
 			local activeConfig = activeItem and ItemConfig[activeItem]
 
 			if activeConfig and activeConfig.Type == "RangeWeapon" then
-				ShootRequest:FireServer(activeItem, activeAmmo, mouse.Hit.Position)
+				ShootRequest:FireServer(activeItem, activeAmmo, getAimPosition(mouse))
 				return
 			end
 
