@@ -21,14 +21,12 @@ local function getModelTemplate(config, itemName)
 	end
 
 	local modelFolder = ctx.BaseObjectsStorage:FindFirstChild(modelFolderName)
-
 	if not modelFolder then
 		warn("Папка моделей не знайдена в Base.Obj:", modelFolderName)
 		return nil
 	end
 
 	local modelTemplate = modelFolder:FindFirstChild(modelName)
-
 	if not modelTemplate then
 		warn("Модель не знайдена в Base.Obj/" .. modelFolderName .. ":", modelName)
 		return nil
@@ -37,15 +35,27 @@ local function getModelTemplate(config, itemName)
 	return modelTemplate
 end
 
-function BaseObjectPlace.Run(player, position, itemName)
-	local config = ctx.ItemConfig[itemName]
-
-	if not config then return end
-	if config.Type ~= "BasePlaceable" then return end
-
-	if not ctx.HasItem(player, itemName, 1) then
-		return
+local function readPlaceData(data)
+	if typeof(data) == "Vector3" then
+		return data, 0
 	end
+
+	if type(data) == "table" then
+		return data.Position, data.RotationY or 0
+	end
+
+	return nil, 0
+end
+
+function BaseObjectPlace.Run(player, data, itemName)
+	local position, rotationY = readPlaceData(data)
+	if not position then return end
+
+	local config = ctx.ItemConfig[itemName]
+	if not config then return end
+
+	if config.Type ~= "BasePlaceable" then return end
+	if not ctx.HasItem(player, itemName, 1) then return end
 
 	local modelTemplate = getModelTemplate(config, itemName)
 	if not modelTemplate then return end
@@ -56,7 +66,10 @@ function BaseObjectPlace.Run(player, position, itemName)
 	object.Name = itemName
 	object.Parent = ctx.BaseObjectsFolder
 
-	object:PivotTo(CFrame.new(position.X, position.Y, position.Z))
+	object:PivotTo(
+		CFrame.new(position.X, position.Y, position.Z)
+			* CFrame.Angles(0, math.rad(rotationY), 0)
+	)
 
 	for _, descendant in ipairs(object:GetDescendants()) do
 		if descendant:IsA("BasePart") then
@@ -67,6 +80,7 @@ function BaseObjectPlace.Run(player, position, itemName)
 
 	object:SetAttribute("ObjectType", config.ObjectType)
 	object:SetAttribute("ObjectId", config.ObjectId or itemName)
+	object:SetAttribute("RotationY", rotationY)
 
 	if config.StorageCapacity then
 		object:SetAttribute("StorageCapacity", config.StorageCapacity)
@@ -74,10 +88,8 @@ function BaseObjectPlace.Run(player, position, itemName)
 
 	object:SetAttribute("BaseType", config.BaseType)
 	object:SetAttribute("MaterialType", config.MaterialType)
-
 	object:SetAttribute("Health", config.MaxHealth)
 	object:SetAttribute("MaxHealth", config.MaxHealth)
-
 	object:SetAttribute("Protection", config.Protection or 0)
 	object:SetAttribute("Resistance", config.Resistance or 0)
 	object:SetAttribute("Absorption", config.Absorption or 0)
