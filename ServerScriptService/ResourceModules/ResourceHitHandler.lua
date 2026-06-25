@@ -121,17 +121,22 @@ function ResourceHitHandler.Handle(player, hitObject, itemName)
 	local itemConfig = ctx.ItemConfig[itemName] or {}
 	local harvestAmount = itemConfig.HarvestAmount or 1
 
-	local result = ctx.DamageResolver.Resolve(
-		{
+	local result = ctx.DamageResolver.Resolve({
+		Item = {
 			Damage = itemConfig.Damage or 1,
 			Penetration = itemConfig.Penetration or 0,
+			Class = itemConfig.Type or "Unknown",
+			HarvestAmount = itemConfig.HarvestAmount or 1,
 		},
-		{
+
+		Target = {
 			Protection = resource:GetAttribute("Protection") or 0,
 			Resistance = resource:GetAttribute("Resistance") or 0,
 			Absorption = resource:GetAttribute("Absorption") or 0,
+			TargetType = resource:GetAttribute("TargetType") or "Resource",
+			ResourceType = resource:GetAttribute("ResourceType"),
 		}
-	)
+	})
 
 	if ctx.DamagePopup then
 		ctx.DamagePopup:FireClient(player, resource, result.Message)
