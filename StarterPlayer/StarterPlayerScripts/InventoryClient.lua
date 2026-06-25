@@ -81,16 +81,14 @@ local function refreshInventory()
 	end
 
 	ui.RefreshInventory(inventory, function(itemName)
-		local config = ItemConfig[itemName]
+		local config = require(ReplicatedStorage:WaitForChild("ItemConfig"))[itemName]
 
 		if config and config.Type == "Ammo" then
 			setActiveAmmo(itemName)
 		else
 			setActiveItem(itemName)
 		end
-
-		refreshInventory()
-	end, activeItem, activeAmmo)
+	end, activeItem)
 end
 
 InventoryUpdate.OnClientEvent:Connect(function(newInventory)
