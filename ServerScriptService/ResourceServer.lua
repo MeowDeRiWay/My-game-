@@ -112,7 +112,7 @@ local function findRecipe(craftId)
 	return nil
 end
 
-ResourceHitHandler.Init({
+ObjectHitHandler.Init({
 	AddItem = addItem,
 	SendInventory = sendInventory,
 	Popup = ResourcePopupEvent,
@@ -243,8 +243,8 @@ CraftRequest.OnServerEvent:Connect(function(player, craftId)
 	)
 end)
 
-HitResource.OnServerEvent:Connect(function(player, tree, itemName)
-	ResourceHitHandler.Handle(player, tree, itemName)
+HitResource.OnServerEvent:Connect(function(player, target, itemName)
+	ObjectHitHandler.Handle(player, target, itemName)
 end)
 
 BaseObjectRequest.OnServerEvent:Connect(function(player, action, data, itemName)
