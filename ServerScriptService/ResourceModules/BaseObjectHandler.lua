@@ -1,7 +1,7 @@
 local BaseObjectHandler = {}
 
-local BaseObjectPlace = require(script.Parent:WaitForChild("BaseObjectPlace"))
-local BaseObjectInteract = require(script.Parent:WaitForChild("BaseObjectInteract"))
+local BaseObjectPlace = require(script:WaitForChild("BaseObjectPlace"))
+local BaseObjectInteract = require(script:WaitForChild("BaseObjectInteract"))
 
 local context = nil
 
