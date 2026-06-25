@@ -130,7 +130,9 @@ ObjectHitHandler.Init({
 BaseObjectHandler.Init({
 	ItemConfig = ItemConfig,
 	DamageResolver = DamageResolver,
-
+	
+	ObjectHitHandler = ObjectHitHandler,
+	
 	ChestHandler = ChestHandler,
 
 	BaseObjectsStorage = BaseObjectsStorage,
