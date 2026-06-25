@@ -17,6 +17,7 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local InventoryUpdate = Remotes:WaitForChild("InventoryUpdate")
 
 local inventory = {}
+
 local activeItem = "Рука"
 local activeAmmo = nil
 local inventoryOpen = false
@@ -147,3 +148,10 @@ player:SetAttribute("ActionMode", "Спокій")
 setActiveItem(activeItem)
 setActiveAmmo(activeAmmo)
 refreshInventory()
+
+InventoryUpdate.OnClientEvent:Connect(function(newInventory)
+	print("[InventoryClient] InventoryUpdate received:", newInventory)
+
+	inventory = newInventory or {}
+	refreshInventory()
+end)
