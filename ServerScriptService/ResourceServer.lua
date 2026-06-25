@@ -37,7 +37,7 @@ local DamageResolver = require(ReplicatedStorage:WaitForChild("DamageResolver"))
 
 local BaseObjectsStorage = ReplicatedStorage:WaitForChild("Base.Obj")
 
-local ResourceHitHandler = require(script.Parent.ResourceModules.ResourceHitHandler)
+local ObjectHitHandler = require(script.ResourceModules:WaitForChild("ObjectHitHandler"))
 local BaseObjectHandler = require(script.Parent.ResourceModules.BaseObjectHandler)
 local ChestHandler = require(script.Parent.ResourceModules.ChestHandler)
 local ProjectileHandler = require(script.Parent.ResourceModules.ProjectileHandler)
